@@ -34,21 +34,20 @@ version-check:
 # carries nothing, and the gap between those two states is where people conclude
 # the tool does not work. Registration goes through each agent's own CLI, so
 # grasshopper never edits somebody else's config file by hand.
+# Registering is part of installing: a binary on PATH that no agent knows about
+# carries nothing, and the gap between those two states is where people conclude
+# the tool does not work. hop setup does it for every agent it can find.
 install: version-check check build
 	@mkdir -p '$(PREFIX)'
 	@install -m 0755 hop '$(PREFIX)/hop'
 	@echo "installed $(PREFIX)/hop ($(VERSION))"
-	@command -v claude >/dev/null 2>&1 && { \
-		claude mcp remove grasshopper --scope user >/dev/null 2>&1 || true; \
-		claude mcp add grasshopper --scope user -- '$(PREFIX)/hop' mcp && \
-		echo "registered with claude (user scope)"; } || \
-		echo "claude not on PATH — register by hand: claude mcp add grasshopper -- $(PREFIX)/hop mcp"
+	@'$(PREFIX)/hop' setup
 	@command -v hop >/dev/null 2>&1 || printf '\nNote: %s is not on your PATH.\nAdd it in ~/.zshrc:  export PATH="%s:$$PATH"\n' '$(PREFIX)' '$(PREFIX)'
 
-# Unregistered before removed. In the other order the agent is left calling a
-# command that no longer exists, on every startup, forever.
+# Unregistered before removed. In the other order every agent is left calling a
+# command that no longer exists, on every start, forever.
 uninstall:
-	@command -v claude >/dev/null 2>&1 && claude mcp remove grasshopper --scope user 2>/dev/null || true
+	@'$(PREFIX)/hop' uninstall 2>/dev/null || true
 	@rm -f '$(PREFIX)/hop'
 	@echo "removed $(PREFIX)/hop"
 

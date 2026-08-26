@@ -53,6 +53,17 @@ type Agent struct {
 	// with "Claude in VS Code" beside "Codex, terminal" in the same column.
 	Surfaces map[string]string `json:"surfaces,omitempty"`
 
+	// MCPAdd and MCPRemove are how to tell this agent about an MCP server, as
+	// arguments to its own command line. {name} and {command} are filled in.
+	//
+	// Arguments rather than a shell string, and data rather than code, because
+	// they differ per agent for no reason anybody can predict — one takes a
+	// --scope, the next has never heard of it — and a new agent should cost a
+	// line of JSON. Registering through an agent's own command line also means
+	// grasshopper never edits somebody else's configuration file by hand.
+	MCPAdd    []string `json:"mcp_add,omitempty"`
+	MCPRemove []string `json:"mcp_remove,omitempty"`
+
 	// Launch is where to find the command that starts this agent: a name to look
 	// up on PATH, a path to a file, or several of either separated by commas and
 	// tried in order.
@@ -78,6 +89,8 @@ func Default() Registry {
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
 			Launch:      "claude,~/.local/bin/claude,/opt/homebrew/bin/claude",
+			MCPAdd:      []string{"mcp", "add", "{name}", "--scope", "user", "--", "{command}", "mcp"},
+			MCPRemove:   []string{"mcp", "remove", "{name}", "--scope", "user"},
 			Surfaces: map[string]string{
 				"cli":            "terminal",
 				"claude-desktop": "desktop app",
@@ -91,6 +104,8 @@ func Default() Registry {
 			Normalize:   "jsonl-events",
 			Index:       "~/.codex/session_index.jsonl",
 			Launch:      "codex,/Applications/ChatGPT.app/Contents/Resources/codex",
+			MCPAdd:      []string{"mcp", "add", "{name}", "--", "{command}", "mcp"},
+			MCPRemove:   []string{"mcp", "remove", "{name}"},
 			Surfaces: map[string]string{
 				"Codex Desktop": "ChatGPT app",
 				"Codex CLI":     "terminal",
@@ -169,6 +184,12 @@ func merge(theirs Registry) Registry {
 		if len(override.Surfaces) > 0 {
 			agent.Surfaces = override.Surfaces
 		}
+		if len(override.MCPAdd) > 0 {
+			agent.MCPAdd = override.MCPAdd
+		}
+		if len(override.MCPRemove) > 0 {
+			agent.MCPRemove = override.MCPRemove
+		}
 		out[key] = agent
 	}
 	return out
@@ -204,6 +225,17 @@ func (r Registry) Called(key string) string {
 		return name
 	}
 	return key
+}
+
+// MCPArgs fills in an agent's registration arguments.
+func MCPArgs(template []string, name, command string) []string {
+	args := make([]string, 0, len(template))
+	for _, arg := range template {
+		arg = strings.ReplaceAll(arg, "{name}", name)
+		arg = strings.ReplaceAll(arg, "{command}", command)
+		args = append(args, arg)
+	}
+	return args
 }
 
 // Surface names one of an agent's front ends, always as "<agent>, <front end>".

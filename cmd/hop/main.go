@@ -48,6 +48,8 @@ func commands() []command {
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
 		{"source", "", "which apps grasshopper can read, and which are not linked", runSource},
+		{"setup", "", "register grasshopper with every agent on this machine", runSetup},
+		{"uninstall", "", "unregister it from every agent", runUninstall},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
 		{"version", "", "print the version and where this binary is", runVersion},
 	}
