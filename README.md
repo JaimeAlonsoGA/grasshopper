@@ -24,16 +24,22 @@ before removing the binary.
 The document is the thing. Everything else points at it.
 
 ```
-hop pack              pack a session into a hop, reference on your clipboard
-hop pack --full       the whole hop on your clipboard, for a browser tab
+hop pack              write a hop to a file, and copy a reference to it
+hop pack --full       put the whole hop on your clipboard, for a browser tab
 hop pack --reveal     and show it in Finder, ready to drag into an app
-hop to                send a hop to another agent — it asks which
+hop to                open a hop in a command-line agent — it asks which
 hop source            which apps are linked
 ```
 
-`hop to` asks where, rather than expecting you to remember that the app you
-installed is called `codex` on this machine. It lists what can actually be opened,
-by the name each one goes by, and marks the ones that are not installed.
+`hop pack` always does two things: it writes the hop to a file, and it copies a
+short reference to that file. The file is the artefact — attach it, or drag it into
+a chat window. The reference is for pasting where an agent can read a path.
+
+`hop to` is for **command-line agents only** — it starts a program, so a desktop
+app or a browser tab cannot be a destination. It asks where rather than expecting
+you to remember that the app you installed is called `codex` on this machine, and
+it finds command lines that ship inside an application bundle as well as on your
+PATH.
 
 All of them take a session on the command line, and all of them ask when you leave
 it out. The chooser runs on the alternate screen, so it leaves nothing in your

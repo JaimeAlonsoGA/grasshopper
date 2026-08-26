@@ -50,15 +50,22 @@ func runPack(args []string) error {
 	// The path alone on stdout, so it can be piped or passed to another command.
 	// Everything a person reads goes to stderr.
 	fmt.Println(path)
-	fmt.Fprintf(os.Stderr, "%s · %s · %s\n", b.Code, b.Source.Title, b.Content())
+
+	// Both artefacts named, because the file is the point and the clipboard was
+	// the only one anybody could see.
+	fmt.Fprintf(os.Stderr, "\n%s · %s · %s\n", b.Code, b.Source.Title, b.Content())
+	fmt.Fprintf(os.Stderr, "  file       %s\n", path)
 	switch {
 	case !copied:
-		fmt.Fprint(os.Stderr, "no clipboard command found — the path above is the hop\n")
+		fmt.Fprint(os.Stderr, "  clipboard  nothing — no clipboard command on this machine\n")
 	case *full:
-		fmt.Fprintf(os.Stderr, "the whole hop is on your clipboard (%d bytes)\n", len(clipboard))
+		fmt.Fprintf(os.Stderr, "  clipboard  the whole hop, %d bytes\n", len(clipboard))
 	default:
-		fmt.Fprintf(os.Stderr, "a reference is on your clipboard (%d bytes) — paste it where an agent can read files,\n", len(clipboard))
-		fmt.Fprint(os.Stderr, "or attach the file itself. For a browser tab, hop pack --full.\n")
+		fmt.Fprintf(os.Stderr, "  clipboard  a reference to the file, %d bytes\n", len(clipboard))
+	}
+	fmt.Fprint(os.Stderr, "\nAttach the file, or paste the reference where an agent can read files.\n")
+	if !*full {
+		fmt.Fprint(os.Stderr, "For a browser tab, which cannot read your disk: hop pack --full.\n")
 	}
 
 	if *reveal {

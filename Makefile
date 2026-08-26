@@ -10,7 +10,7 @@ LDFLAGS  = -s -w -X main.version=$(VERSION)
 PLATFORMS = darwin/arm64 darwin/amd64 linux/arm64 linux/amd64
 SHA256 := $(shell command -v shasum >/dev/null 2>&1 && echo "shasum -a 256" || echo sha256sum)
 
-.PHONY: help build install uninstall check release clean
+.PHONY: help build version-check install uninstall check release clean
 
 help:
 	@echo "make install     build, put hop on PATH ($(PREFIX)), register it with your agents"
@@ -23,11 +23,18 @@ help:
 build:
 	@go build -ldflags '$(LDFLAGS)' -o hop ./cmd/hop
 
+# A version with -dirty in it is a binary nobody can identify later. Worth one
+# line of warning rather than discovering it from hop version a week on.
+version-check:
+	@case "$(VERSION)" in *dirty*) \
+		printf 'Note: building %s — commit and tag first for a clean version.\n' '$(VERSION)';; \
+	esac
+
 # Registering is part of installing: a binary on PATH that no agent knows about
 # carries nothing, and the gap between those two states is where people conclude
 # the tool does not work. Registration goes through each agent's own CLI, so
 # grasshopper never edits somebody else's config file by hand.
-install: check build
+install: version-check check build
 	@mkdir -p '$(PREFIX)'
 	@install -m 0755 hop '$(PREFIX)/hop'
 	@echo "installed $(PREFIX)/hop ($(VERSION))"

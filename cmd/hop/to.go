@@ -117,7 +117,7 @@ func whereTo(reg registry.Registry) (string, error) {
 		return "", errors.New("no agent in your registry can be opened from here; hop pack writes a hop you can attach instead")
 	}
 
-	i, err := pick.From("send it to?", nil, rows)
+	i, err := pick.From("open it in? — these are the command lines on this machine", nil, rows)
 	if err != nil {
 		if errors.Is(err, pick.ErrCancelled) {
 			return "", errCancelled

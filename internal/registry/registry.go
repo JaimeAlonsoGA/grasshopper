@@ -45,7 +45,12 @@ type Agent struct {
 	// record. One agent ships a terminal, a desktop app, an editor extension and
 	// a phone client that all write to the same place, and telling somebody they
 	// have "claude-code" when what they installed was three separate apps is not
-	// an answer. Optional: an unnamed surface is shown as the agent recorded it.
+	// an answer.
+	//
+	// The value is the front end alone — "terminal", "desktop app" — and the
+	// agent's own name is put in front of it. Written that way round, the
+	// convention cannot drift: it is composed rather than typed, so nobody ends up
+	// with "Claude in VS Code" beside "Codex, terminal" in the same column.
 	Surfaces map[string]string `json:"surfaces,omitempty"`
 
 	// Launch is where to find the command that starts this agent: a name to look
@@ -74,10 +79,10 @@ func Default() Registry {
 			Normalize:   "jsonl-tree",
 			Launch:      "claude,~/.local/bin/claude,/opt/homebrew/bin/claude",
 			Surfaces: map[string]string{
-				"cli":            "Claude Code, terminal",
-				"claude-desktop": "Claude desktop app",
-				"claude-vscode":  "Claude in VS Code",
-				"remote_mobile":  "Claude on a phone",
+				"cli":            "terminal",
+				"claude-desktop": "desktop app",
+				"claude-vscode":  "VS Code",
+				"remote_mobile":  "phone",
 			},
 		},
 		"codex": {
@@ -87,11 +92,11 @@ func Default() Registry {
 			Index:       "~/.codex/session_index.jsonl",
 			Launch:      "codex,/Applications/ChatGPT.app/Contents/Resources/codex",
 			Surfaces: map[string]string{
-				"Codex Desktop": "ChatGPT desktop app",
-				"Codex CLI":     "Codex, terminal",
-				"codex_cli_rs":  "Codex, terminal",
-				"codex-tui":     "Codex, terminal",
-				"codex_vscode":  "Codex in VS Code",
+				"Codex Desktop": "ChatGPT app",
+				"Codex CLI":     "terminal",
+				"codex_cli_rs":  "terminal",
+				"codex-tui":     "terminal",
+				"codex_vscode":  "VS Code",
 			},
 		},
 	}
@@ -201,23 +206,22 @@ func (r Registry) Called(key string) string {
 	return key
 }
 
-// Surface names one of an agent's front ends. An unrecognised value is returned
-// as it was recorded: a name grasshopper has not been taught is still better than
-// a blank, and it is what will still be true after a rename.
+// Surface names one of an agent's front ends, always as "<agent>, <front end>".
+//
+// One shape for all of them, composed rather than typed, so the column reads as
+// one convention. A value grasshopper has not been taught is shown as the agent
+// recorded it: a name nobody chose is still better than a blank, and it is what
+// will still be true after somebody renames a product.
 func (r Registry) Surface(agent, recorded string) string {
-	if named, ok := r[agent].Surfaces[recorded]; ok {
-		return named
+	name := r.Called(agent)
+	if front, ok := r[agent].Surfaces[recorded]; ok {
+		return name + ", " + front
 	}
 	if recorded != "" {
-		return recorded
+		return name + ", " + recorded
 	}
-	// Older transcripts predate the field. Naming the agent and saying it is
-	// unknown is honest; inventing a front end would not be, and a long phrase
-	// would widen the column for every other row.
-	if name := r[agent].Name; name != "" {
-		return name + " (?)"
-	}
-	return agent
+	// Older transcripts predate the field entirely.
+	return name + ", unknown"
 }
 
 func (r Registry) Keys() []string {
