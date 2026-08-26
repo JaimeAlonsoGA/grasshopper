@@ -41,6 +41,8 @@ type command struct {
 func commands() []command {
 	return []command{
 		{"ls", "", "the sessions on this machine, newest first", runList},
+		{"start", "<session>", "open a new session with a conversation already in it", runStart},
+		{"copy", "<session>", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
@@ -82,8 +84,12 @@ func main() {
 func usage(w *os.File) {
 	fmt.Fprint(w, `grasshopper carries a conversation from one agent to another.
 
-Agents reach it over MCP and you never type anything. These commands are for
-looking at what it can see.
+Two ways to use it. Ask an agent — "bring me the thread about billing" — and it
+reaches grasshopper over MCP without you typing anything. Or do it yourself:
+
+    hop ls                       see what is on this machine
+    hop start <session>          open a new session with that conversation in it
+    hop copy <session>           put it on the clipboard, to paste anywhere
 
 usage: hop <command> [flags]
 

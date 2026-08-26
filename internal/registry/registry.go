@@ -28,6 +28,11 @@ import (
 type Agent struct {
 	Transcripts string `json:"transcripts"`
 	Normalize   string `json:"normalize"`
+
+	// Launch is the command that starts this agent, for opening a new session
+	// with a conversation already in it. Optional: an agent with no launch
+	// command can still be listed, read, and copied to the clipboard.
+	Launch string `json:"launch,omitempty"`
 }
 
 type Registry map[string]Agent
@@ -40,6 +45,7 @@ func Default() Registry {
 		"claude-code": {
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
+			Launch:      "claude",
 		},
 		// Everything else is added by editing this file: a glob for its
 		// transcripts and the format they are in. No code, no release.
@@ -78,7 +84,34 @@ func Load() (Registry, error) {
 	if err := json.Unmarshal(b, &r); err != nil {
 		return nil, fmt.Errorf("%s: %w", Path(), err)
 	}
-	return r, nil
+	return merge(r), nil
+}
+
+// merge fills blanks in a known agent from the shipped default, and adds nothing
+// else.
+//
+// The registry is a file people edit and grasshopper never overwrites, which
+// otherwise means a field added in a later version never reaches anybody who
+// already has one. Filling only what is empty keeps their edits, and refusing to
+// add keys they do not have keeps an agent they deleted deleted.
+func merge(r Registry) Registry {
+	for key, shipped := range Default() {
+		theirs, ok := r[key]
+		if !ok {
+			continue
+		}
+		if theirs.Transcripts == "" {
+			theirs.Transcripts = shipped.Transcripts
+		}
+		if theirs.Normalize == "" {
+			theirs.Normalize = shipped.Normalize
+		}
+		if theirs.Launch == "" {
+			theirs.Launch = shipped.Launch
+		}
+		r[key] = theirs
+	}
+	return r
 }
 
 // Write materialises the default registry so it can be edited. It refuses to
