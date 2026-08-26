@@ -47,6 +47,7 @@ func commands() []command {
 		{"copy", "[session]", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
+		{"sources", "", "check every source is linked, and repair the ones that moved", runSources},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
 		{"version", "", "print the version and where this binary is", runVersion},
 	}
@@ -92,6 +93,7 @@ reaches grasshopper over MCP without you typing anything. Or do it yourself:
     hop ls                       see what is on this machine
     hop copy                     pick one with the arrows, put it on the clipboard
     hop start                    pick one, open a new session with it already in it
+    hop sources                  check everything is hooked up
 
 usage: hop <command> [flags]
 

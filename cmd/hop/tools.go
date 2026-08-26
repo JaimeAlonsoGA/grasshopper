@@ -9,6 +9,7 @@ import (
 	"grasshopper/internal/bundle"
 	"grasshopper/internal/mcp"
 	"grasshopper/internal/sessions"
+	"grasshopper/internal/transcript"
 )
 
 // The two tools are the whole product. Everything else in this binary exists so a
@@ -156,3 +157,7 @@ func short(dir string) string {
 	}
 	return dir
 }
+
+// readerNames is the formats grasshopper can actually read, for an error message
+// that tells somebody what to type instead of only what was wrong.
+func readerNames() []string { return transcript.Names() }

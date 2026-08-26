@@ -133,3 +133,26 @@ func TestDefaultIsSelfConsistent(t *testing.T) {
 		}
 	}
 }
+
+// An agent that has just written one session into the old location while twenty
+// sit in the new one still matches its glob. Reporting that as linked is the
+// silent failure this is here to catch.
+func TestStaleIsAboutMissingSessionsNotZero(t *testing.T) {
+	cases := []struct {
+		name           string
+		found, shipped int
+		want           bool
+	}{
+		{"agreeing", 19, 0, false},
+		{"nothing anywhere", 0, 0, false},
+		{"configured finds none, shipped finds some", 0, 19, true},
+		{"configured finds one, shipped finds twenty", 1, 21, true},
+		{"configured finds more than shipped", 21, 19, false},
+	}
+	for _, c := range cases {
+		s := Status{Transcripts: c.found, Shipped: c.shipped}
+		if s.Stale() != c.want {
+			t.Errorf("%s: Stale() = %v, want %v", c.name, s.Stale(), c.want)
+		}
+	}
+}

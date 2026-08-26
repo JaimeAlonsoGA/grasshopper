@@ -60,16 +60,18 @@ type Status struct {
 	Transcripts int    // how many files the glob matches right now
 	Readable    bool   // a transcript format is configured
 
-	// Shipped is how many the version's own glob would match. When it finds
-	// sessions and the configured glob finds none, the registry is out of date —
-	// an agent moved its files, or a newer grasshopper knows a second place to
-	// look. grasshopper will not overwrite a file somebody may have edited, so
+	// Shipped is how many this version's own glob would match. grasshopper will
+	// not overwrite a registry somebody may have edited, so when the two disagree
 	// the only honest thing left is to say so.
 	Shipped int
 }
 
-// Stale reports a configured glob that has been overtaken by the shipped one.
-func (s Status) Stale() bool { return s.Transcripts == 0 && s.Shipped > 0 }
+// Stale reports a configured glob that is missing sessions the shipped one finds.
+//
+// Finding fewer, not finding none: an agent that has just written one session
+// into the old location while twenty sit in the new one still matches its glob,
+// and reporting that as linked is the silent failure this exists to catch.
+func (s Status) Stale() bool { return s.Shipped > s.Transcripts }
 
 func Discover() ([]Status, error) {
 	r, err := Load()

@@ -125,7 +125,8 @@ func launch(binary, dir string, args []string) error {
 // runCopy is the universal path: anything that cannot be launched can still be
 // pasted into. Every surface on earth accepts a paste.
 func runCopy(args []string) error {
-	fs := flags("copy", "<session>")
+	fs := flags("copy", "[session]")
+	full := fs.Bool("full", false, "the whole conversation inline, for somewhere that cannot read a file")
 	rest, err := parse(fs, args)
 	if err != nil {
 		return err
@@ -139,12 +140,31 @@ func runCopy(args []string) error {
 		return err
 	}
 
-	rendered := bundle.Render(b)
-	if err := toClipboard(rendered); err != nil {
+	// The file is written either way, so the pointer is always valid and --full is
+	// never the only copy.
+	path, err := store.Write(b)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "grasshopper: %s · %d bytes on the clipboard · %s\n",
-		b.Code, len(rendered), b.Source.Title)
+
+	// A pointer by default: pasting a whole conversation spends the context the
+	// handover was meant to save. --full is for a browser tab, which cannot read
+	// a file on this machine.
+	payload := bundle.Pointer(b, path)
+	if *full {
+		payload = bundle.Render(b)
+	}
+	if err := toClipboard(payload); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "grasshopper: %s · %s\n", b.Code, b.Source.Title)
+	if *full {
+		fmt.Fprintf(os.Stderr, "%d bytes on the clipboard — the whole conversation.\n", len(payload))
+		return nil
+	}
+	fmt.Fprintf(os.Stderr, "%d bytes on the clipboard, pointing at %s\n", len(payload), path)
+	fmt.Fprintf(os.Stderr, "Paste it where an agent can read files. For a browser tab, hop copy --full.\n")
 	return nil
 }
 
