@@ -25,10 +25,6 @@ func runSource(args []string) error {
 		return err
 	}
 
-	reg, err := registry.Load()
-	if err != nil {
-		return err
-	}
 	statuses, err := registry.Discover()
 	if err != nil {
 		return err
@@ -41,11 +37,12 @@ func runSource(args []string) error {
 	// Grouped by front end, not by registry key: what somebody installed was a
 	// terminal, a desktop app and an editor extension, and telling them they have
 	// "claude-code" answers a question they did not ask.
+	surface := namer()
 	found := map[string]int{}
 	newest := map[string]time.Time{}
 	perAgent := map[string]int{}
 	for _, s := range all {
-		name := reg.Surface(s.Agent, s.Surface)
+		name := surface(s)
 		found[name]++
 		perAgent[s.Agent]++
 		if s.When.After(newest[name]) {

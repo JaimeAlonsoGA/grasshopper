@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"grasshopper/internal/pick"
+	"grasshopper/internal/registry"
 	"grasshopper/internal/sessions"
 )
 
@@ -26,13 +27,14 @@ func choose(args []string, prompt string) (sessions.Session, error) {
 		return sessions.Session{}, errors.New("no sessions found; hop doctor shows where grasshopper is looking")
 	}
 
+	surface := namer()
 	rows := make([]pick.Row, 0, len(all))
 	for _, s := range all {
-		// Not dimmed by age: the list is already sorted newest first, so dimming
-		// the old ones repeats what the order says, and reads as a few rows being
-		// arbitrarily lit up.
+		// Title second: it is the only thing anybody recognises a session by. The
+		// source after it, because two sessions can share a name across two apps.
+		// Not dimmed by age — the list is already sorted newest first.
 		rows = append(rows, pick.Row{
-			Cells: []string{s.ID, ago(s.When), surface(s), truncate(s.Label(), titleWidth)},
+			Cells: []string{s.ID, truncate(s.Label(), titleWidth), surface(s), ago(s.When)},
 		})
 	}
 
@@ -46,14 +48,24 @@ func choose(args []string, prompt string) (sessions.Session, error) {
 	return all[i], nil
 }
 
-// surface is which front end the session came from, as the agent recorded it.
-// Grasshopper does not translate the value: the one they wrote is the one that
-// will still be true after they rename a product.
-func surface(s sessions.Session) string {
-	if s.Surface == "" {
-		return s.Agent
+// namer resolves front ends to the names their apps go by. The registry is loaded
+// once for a whole listing rather than once per row: it is a file read, and a list
+// of forty would read it forty times.
+//
+// This exists because the pretty names were in the registry and the listings were
+// not asking for them — forty rows of "claude-desktop" when the answer was "Claude
+// desktop app".
+func namer() func(sessions.Session) string {
+	reg, err := registry.Load()
+	if err != nil {
+		return func(s sessions.Session) string {
+			if s.Surface != "" {
+				return s.Surface
+			}
+			return s.Agent
+		}
 	}
-	return s.Surface
+	return func(s sessions.Session) string { return reg.Surface(s.Agent, s.Surface) }
 }
 
 // ago is how people think about when something happened. Absolute time goes in

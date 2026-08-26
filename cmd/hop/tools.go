@@ -61,7 +61,11 @@ func listTool(raw json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	rows := [][]string{{"ID", "WHEN", "STATE", "DIRECTORY", "TITLE"}}
+	// Title second and bounded, so the columns after it line up. The directory is
+	// not here: it is in the hop's own header, where somebody reading a
+	// conversation needs it — in a list of forty it is the same word forty times.
+	surface := namer()
+	rows := [][]string{{"ID", "SESSION", "FROM", "WHEN"}}
 	shown := 0
 	for _, s := range all {
 		if args.Active && !s.Active {
@@ -71,7 +75,7 @@ func listTool(raw json.RawMessage) (string, error) {
 			break
 		}
 		shown++
-		rows = append(rows, []string{s.ID, s.When.Format("2006-01-02 15:04"), state(s), short(s.Dir()), truncate(s.Label(), titleWidth)})
+		rows = append(rows, []string{s.ID, truncate(s.Label(), titleWidth), surface(s), ago(s.When)})
 	}
 	if shown == 0 {
 		return "No sessions found. hop doctor shows where grasshopper is looking.", nil
@@ -127,16 +131,10 @@ func field(kind, description string) map[string]any {
 	return map[string]any{"type": kind, "description": description}
 }
 
-func state(s sessions.Session) string {
-	if s.Active {
-		return "active"
-	}
-	return "idle"
-}
-
-// titleWidth keeps a listing to one line per session. Sessions whose agent gave
-// them no title fall back to the first thing said, which can run for paragraphs.
-const titleWidth = 64
+// titleWidth keeps a listing to one line per session, and keeps the columns after
+// the title aligned. Sessions whose agent gave them no title fall back to the
+// first thing said, which can run for paragraphs.
+const titleWidth = 52
 
 func truncate(s string, width int) string {
 	s = strings.Join(strings.Fields(s), " ")

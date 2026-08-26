@@ -90,6 +90,8 @@ func Default() Registry {
 				"Codex Desktop": "ChatGPT desktop app",
 				"Codex CLI":     "Codex, terminal",
 				"codex_cli_rs":  "Codex, terminal",
+				"codex-tui":     "Codex, terminal",
+				"codex_vscode":  "Codex in VS Code",
 			},
 		},
 	}
@@ -209,9 +211,13 @@ func (r Registry) Surface(agent, recorded string) string {
 	if recorded != "" {
 		return recorded
 	}
-	// Older transcripts predate the field. Naming the agent is honest; inventing
-	// a front end for them would not be.
-	return agent + ", surface not recorded"
+	// Older transcripts predate the field. Naming the agent and saying it is
+	// unknown is honest; inventing a front end would not be, and a long phrase
+	// would widen the column for every other row.
+	if name := r[agent].Name; name != "" {
+		return name + " (?)"
+	}
+	return agent
 }
 
 func (r Registry) Keys() []string {

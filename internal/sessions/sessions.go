@@ -87,10 +87,35 @@ func (s Session) Label() string {
 	if s.Title != "" {
 		return s.Title
 	}
+	if from, ok := continuedFrom(s.Opening); ok {
+		return "↳ continued from " + from
+	}
 	if s.Opening != "" {
 		return s.Opening
 	}
 	return "(nothing was said)"
+}
+
+// continuedFrom recognises a session grasshopper itself opened, before the agent
+// has got round to naming it.
+//
+// Its first words are the prompt grasshopper wrote, so the raw opening reads as a
+// file path — which says nothing. Saying which hop it came from says everything,
+// and it makes a chain of handovers visible in the listing.
+func continuedFrom(opening string) (string, bool) {
+	const marker = "HOP-"
+	if !strings.HasPrefix(opening, "Read ") || !strings.Contains(opening, "grasshopper") {
+		return "", false
+	}
+	i := strings.Index(opening, marker)
+	if i < 0 {
+		return "", false
+	}
+	code := opening[i:]
+	if end := strings.IndexAny(code, " .\n"); end > 0 {
+		code = code[:end]
+	}
+	return strings.TrimSuffix(code, ".md"), true
 }
 
 func (s Session) Dir() string {

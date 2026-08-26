@@ -277,3 +277,26 @@ func TestIDsAreShortAndUnique(t *testing.T) {
 		}
 	}
 }
+
+// A session grasshopper opened begins with the prompt grasshopper wrote, so its
+// raw opening reads as a file path. Naming the hop it came from says what
+// happened, and makes a chain of handovers visible in a listing.
+func TestLabelNamesTheHopASessionCameFrom(t *testing.T) {
+	opening := "Read /Users/someone/.grasshopper/bundles/HOP-K3QZ.md first — it is a record " +
+		"of an earlier session, carried here by grasshopper."
+	if got := (Session{Opening: opening}).Label(); got != "↳ continued from HOP-K3QZ" {
+		t.Errorf("Label = %q", got)
+	}
+
+	// And an ordinary opening is left exactly as somebody wrote it.
+	for _, plain := range []string{
+		"Read the billing resolver and tell me what is wrong",
+		"Read /etc/hosts",
+		"",
+	} {
+		got := (Session{Opening: plain}).Label()
+		if strings.HasPrefix(got, "↳") {
+			t.Errorf("Label(%q) = %q, want it left alone", plain, got)
+		}
+	}
+}
