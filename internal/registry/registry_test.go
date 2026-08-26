@@ -123,5 +123,13 @@ func TestDefaultIsSelfConsistent(t *testing.T) {
 		if agent.Normalize != "" && agent.Transcripts == "" {
 			t.Errorf("%s claims a format but says where no transcripts are", key)
 		}
+		if agent.Transcripts != "" && agent.Normalize == "" {
+			t.Errorf("%s says where its transcripts are but not how to read them", key)
+		}
+		// An entry with nothing in it is almost always a half-applied edit, not a
+		// deliberate placeholder.
+		if agent == (Agent{}) {
+			t.Errorf("%s is entirely empty", key)
+		}
 	}
 }

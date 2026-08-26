@@ -78,8 +78,11 @@ func TestListUsesTheSessionsOwnTitle(t *testing.T) {
 	if all[0].Title != "Cleanup" {
 		t.Errorf("not newest first, or title missing: %+v", all[0])
 	}
-	if all[0].Label() != "Cleanup" || all[0].ID != "bbbbbbbb" {
-		t.Errorf("Label = %q, ID = %q", all[0].Label(), all[0].ID)
+	if all[0].Label() != "Cleanup" {
+		t.Errorf("Label = %q", all[0].Label())
+	}
+	if len(all[0].ID) != idLength {
+		t.Errorf("ID = %q, want %d characters", all[0].ID, idLength)
 	}
 	if all[0].Dir() != "/w/web" {
 		t.Errorf("Dir = %q", all[0].Dir())
@@ -194,5 +197,83 @@ func TestEmptySessionIsListedAndSaysSo(t *testing.T) {
 	}
 	if _, err := all[0].Load(0); err == nil {
 		t.Error("loading an empty session should say there is nothing in it")
+	}
+}
+
+// The handle has to survive the file moving. One agent archives a session by
+// moving it to another directory, and an id that changed when that happened would
+// be an id you could not write down.
+func TestIDSurvivesTheFileMoving(t *testing.T) {
+	home := setup(t)
+	path := write(t, home, ".agent", "abcdef111111", "Billing", "/w/api", "build it", "built")
+
+	before, err := List()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	archived := filepath.Join(home, ".agent", "archive")
+	if err := os.MkdirAll(archived, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	moved := filepath.Join(archived, filepath.Base(path))
+	if err := os.Rename(path, moved); err != nil {
+		t.Fatal(err)
+	}
+	// The registry looks in both places, as it does for a real agent that archives.
+	registryPath := filepath.Join(home, ".grasshopper", "registry.json")
+	body := `{"readable":{"transcripts":"~/.agent/*/*.jsonl,~/.agent/archive/*.jsonl","normalize":"jsonl-tree"}}`
+	if err := os.WriteFile(registryPath, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(after) != 1 {
+		t.Fatalf("got %d sessions after the move", len(after))
+	}
+	if after[0].ID != before[0].ID {
+		t.Errorf("id changed when the file moved: %q became %q", before[0].ID, after[0].ID)
+	}
+}
+
+// Handles are short, and they lengthen only when two would collide.
+func TestIDsAreShortAndUnique(t *testing.T) {
+	home := setup(t)
+	for i := 0; i < 40; i++ {
+		// Identifiers that share a long prefix, the way time-ordered ones do.
+		id := fmt.Sprintf("01a03ea6-0d36-79d1-bce2-d2f16f72%04d", i)
+		write(t, home, ".agent", id, fmt.Sprintf("Session %d", i), "/w/api", "x", "y")
+	}
+
+	all, err := List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	for _, s := range all {
+		if seen[s.ID] {
+			t.Fatalf("duplicate id %q", s.ID)
+		}
+		seen[s.ID] = true
+		if len(s.ID) > idMaxLength {
+			t.Errorf("id %q is longer than %d", s.ID, idMaxLength)
+		}
+	}
+	if len(seen) != 40 {
+		t.Errorf("got %d ids for 40 sessions", len(seen))
+	}
+	// And every one of them resolves back.
+	for _, s := range all {
+		got, err := Find(s.ID)
+		if err != nil {
+			t.Errorf("Find(%q): %v", s.ID, err)
+			continue
+		}
+		if got.Path != s.Path {
+			t.Errorf("Find(%q) returned the wrong session", s.ID)
+		}
 	}
 }

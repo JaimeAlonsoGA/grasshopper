@@ -70,6 +70,17 @@ func runDoctor(args []string) error {
 	fmt.Println()
 	writeTable(os.Stdout, rows)
 
+	for _, s := range statuses {
+		if !s.Stale() {
+			continue
+		}
+		fmt.Printf("\n%s: the glob in your registry matches nothing, but this version's\n", s.Key)
+		fmt.Printf("would find %d sessions. Its files probably moved. Replace\n", s.Shipped)
+		fmt.Printf("  \"transcripts\": %q\n", s.Agent.Transcripts)
+		fmt.Printf("with\n  \"transcripts\": %q\n", registry.Default()[s.Key].Transcripts)
+		fmt.Printf("in %s, or delete that file to start over.\n", registry.Path())
+	}
+
 	all, err := sessions.List()
 	if err != nil {
 		return err

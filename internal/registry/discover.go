@@ -16,13 +16,33 @@ func Transcripts(a Agent) []string {
 	})
 }
 
-func matches(pattern string, order func([]string)) []string {
-	if pattern == "" {
+// Index is the file naming an agent's sessions, when it keeps one.
+func Index(a Agent) []string { return matches(a.Index, nil) }
+
+// matches expands one glob or several, comma separated, and deduplicates. An
+// agent that moves a session from one directory to another mid-run would
+// otherwise appear twice for as long as both globs see it.
+func matches(patterns string, order func([]string)) []string {
+	if patterns == "" {
 		return nil
 	}
-	found, err := filepath.Glob(expand(pattern))
-	if err != nil {
-		return nil
+	var found []string
+	seen := map[string]bool{}
+	for _, pattern := range strings.Split(patterns, ",") {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		paths, err := filepath.Glob(expand(pattern))
+		if err != nil {
+			continue
+		}
+		for _, path := range paths {
+			if !seen[path] {
+				seen[path] = true
+				found = append(found, path)
+			}
+		}
 	}
 	if order != nil {
 		order(found)
@@ -39,7 +59,17 @@ type Status struct {
 	StateDir    string // "" when the agent has left no state behind
 	Transcripts int    // how many files the glob matches right now
 	Readable    bool   // a transcript format is configured
+
+	// Shipped is how many the version's own glob would match. When it finds
+	// sessions and the configured glob finds none, the registry is out of date —
+	// an agent moved its files, or a newer grasshopper knows a second place to
+	// look. grasshopper will not overwrite a file somebody may have edited, so
+	// the only honest thing left is to say so.
+	Shipped int
 }
+
+// Stale reports a configured glob that has been overtaken by the shipped one.
+func (s Status) Stale() bool { return s.Transcripts == 0 && s.Shipped > 0 }
 
 func Discover() ([]Status, error) {
 	r, err := Load()
@@ -49,13 +79,17 @@ func Discover() ([]Status, error) {
 	out := make([]Status, 0, len(r))
 	for _, key := range r.Keys() {
 		agent := r[key]
-		out = append(out, Status{
+		status := Status{
 			Key:         key,
 			Agent:       agent,
 			StateDir:    stateDir(agent),
 			Transcripts: len(Transcripts(agent)),
 			Readable:    agent.Normalize != "",
-		})
+		}
+		if shipped, ok := Default()[key]; ok && shipped.Transcripts != agent.Transcripts {
+			status.Shipped = len(Transcripts(shipped))
+		}
+		out = append(out, status)
 	}
 	return out, nil
 }
@@ -66,7 +100,7 @@ func stateDir(a Agent) string {
 	if a.Transcripts == "" {
 		return ""
 	}
-	path := expand(a.Transcripts)
+	path := expand(strings.Split(a.Transcripts, ",")[0])
 	if i := strings.IndexAny(path, "*?["); i >= 0 {
 		path = filepath.Dir(path[:i])
 	}

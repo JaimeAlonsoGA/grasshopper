@@ -30,7 +30,8 @@ var ErrNothingSaid = errors.New("no conversation in this session")
 type Reader func(io.ReadSeeker) ([]bundle.Turn, error)
 
 var readers = map[string]Reader{
-	"jsonl-tree": JSONLTree,
+	"jsonl-tree":   JSONLTree,
+	"jsonl-events": JSONLEvents,
 }
 
 // Get looks a reader up by format key. An unknown key is an error and never a
@@ -46,6 +47,16 @@ func Get(name string) (Reader, error) {
 		return nil, fmt.Errorf("unknown transcript format %q (known: %s)", name, strings.Join(Names(), ", "))
 	}
 	return r, nil
+}
+
+// Titles reads an agent's session index, for formats that keep their titles
+// beside the transcripts instead of inside them. An unknown format has no index
+// to read, which is not an error — those formats carry their titles internally.
+func Titles(format string, r io.Reader) map[string]string {
+	if format == "jsonl-events" {
+		return titlesFromIndex(r)
+	}
+	return nil
 }
 
 func Names() []string {

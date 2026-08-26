@@ -11,7 +11,6 @@ import (
 
 	"grasshopper/internal/bundle"
 	"grasshopper/internal/registry"
-	"grasshopper/internal/sessions"
 	"grasshopper/internal/store"
 )
 
@@ -29,11 +28,7 @@ func runStart(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(rest) == 0 {
-		return fmt.Errorf("%w: name a session; hop ls shows them", errUsage)
-	}
-
-	session, err := sessions.Find(rest[0])
+	session, err := choose(rest, "open which session?")
 	if err != nil {
 		return err
 	}
@@ -77,7 +72,11 @@ func runStart(args []string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "grasshopper: %s · %s\n", b.Code, path)
-	return launch(agent.Launch, b.Source.Dir, append([]string{prompt}, rest[1:]...))
+	var passthrough []string
+	if len(rest) > 1 {
+		passthrough = rest[1:]
+	}
+	return launch(agent.Launch, b.Source.Dir, append([]string{prompt}, passthrough...))
 }
 
 // launch runs the agent in grasshopper's place: same terminal, same signals, same
@@ -131,11 +130,7 @@ func runCopy(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(rest) == 0 {
-		return fmt.Errorf("%w: name a session; hop ls shows them", errUsage)
-	}
-
-	session, err := sessions.Find(rest[0])
+	session, err := choose(rest, "copy which session?")
 	if err != nil {
 		return err
 	}

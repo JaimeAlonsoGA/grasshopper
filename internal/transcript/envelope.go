@@ -30,6 +30,20 @@ var (
 		"ide_selection",
 		"ide_diagnostics",
 	}
+
+	// injected marks a whole block as the host's context rather than somebody's
+	// words. It is a separate list from discarded because these are not wrappers
+	// around prose to be unwrapped — the entire block is the host talking, and
+	// what surrounds the tag is part of it: a heading naming the file, a preamble,
+	// a trailing note. Nobody types "<environment_context>" into a chat, so
+	// finding one is proof enough that the block is not theirs.
+	injected = []string{
+		"recommended_plugins",
+		"app-context",
+		"environment_context",
+		"INSTRUCTIONS",
+		"user_instructions",
+	}
 	// unwrapped elements have a wrapper worth losing and content worth keeping.
 	// A slash command is something a person chose to run; it is intent.
 	unwrapped = []string{
@@ -38,8 +52,24 @@ var (
 	}
 )
 
+// IsInjected reports whether a block is the host's own context. A format that
+// delivers several blocks inside one turn needs this per block: the first turn of
+// a session can be a catalogue of plugins, the project's rules file and a
+// description of the shell, none of which anybody said.
+func IsInjected(s string) bool {
+	for _, tag := range injected {
+		if strings.Contains(s, "<"+tag+">") {
+			return true
+		}
+	}
+	return false
+}
+
 func stripEnvelopes(s string) string {
 	for _, tag := range discarded {
+		s = removeElement(s, tag)
+	}
+	for _, tag := range injected {
 		s = removeElement(s, tag)
 	}
 	for _, tag := range unwrapped {

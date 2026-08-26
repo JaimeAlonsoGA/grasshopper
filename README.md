@@ -19,7 +19,16 @@ you never type anything — you ask, in any session:
 and the agent finds it and loads it. `make uninstall` reverses it, unregistering
 before removing the binary.
 
-## Looking at what it can see
+## Doing it yourself
+
+```
+hop copy      pick one with the arrows, it lands on your clipboard
+hop start     pick one, open a new session with it already in it
+```
+
+Both take a session on the command line too, and both ask when you leave it out —
+arrows, `j`/`k`, a digit to jump, return to choose, `q` to back out. Down a pipe it
+falls back to a numbered list, so scripts work.
 
 ```
 hop ls              every session on this machine, newest first
@@ -28,8 +37,15 @@ hop show <session>  print one as a bundle — exactly what an agent gets
 hop doctor          where grasshopper is looking, and what it found
 ```
 
-A session is named by its id, a fragment of its title, or its path. Titles come
-from the transcript itself, so they survive the session being closed.
+A session is named by its handle from the listing, by its underlying identifier,
+or by a fragment of its title. Titles come from the agent itself, so they survive
+the session being closed.
+
+The handle is four characters of a hash rather than a prefix of the identifier.
+One agent's identifiers are ordered by time, and sessions started in the same
+batch share their first twenty-four characters — no prefix short enough to type
+told them apart. It hashes the identifier and not the path, so archiving a session
+by moving its file does not change it.
 
 ## What an agent gets
 
@@ -65,13 +81,36 @@ payloads — a 64 MB session becomes 109 KB of what was actually said — and ca
 the rest. It never writes into another app's state, and it never copies a
 transcript: the original stays where its own agent put it.
 
+## What it reads today
+
+```
+claude-code   the terminal, the desktop app, and the editor extension
+codex         the desktop app and the CLI
+```
+
+Both are read from the files they already write. The listing says which front end
+each session came from, as the agent recorded it.
+
+Sessions that run in the cloud rather than on the machine leave no transcript
+behind, so they cannot be read — only their id and folder are stored locally. Same
+for anything that lives in a browser tab.
+
 ## Adding an agent
 
 `~/.grasshopper/registry.json` is yours to edit. An agent is a glob and a format:
 
 ```json
-{ "some-agent": { "transcripts": "~/.some-agent/**/*.jsonl", "normalize": "jsonl-tree" } }
+{ "some-agent": {
+    "transcripts": "~/.some-agent/current/*.jsonl,~/.some-agent/archive/*.jsonl",
+    "normalize": "jsonl-events",
+    "index": "~/.some-agent/index.jsonl"
+} }
 ```
+
+Several globs, comma separated, because an agent may keep current and archived
+sessions apart. `index` is only needed when the titles live beside the transcripts
+instead of inside them. Two formats are implemented: `jsonl-tree`, where records
+link into a tree by parent, and `jsonl-events`, a flat stream of typed events.
 
 No code, no release. An agent whose format nobody has written a reader for is
 still listed — it just cannot be loaded.

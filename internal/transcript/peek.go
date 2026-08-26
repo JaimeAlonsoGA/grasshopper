@@ -24,6 +24,12 @@ const peekBytes = 256 << 10
 // answer to "where was this session working" would be a guess, and the caller
 // needs the truth to put in front of somebody.
 type Preview struct {
+	// Surface is which front end started the session — a terminal, an editor
+	// extension, a desktop app, a phone. Both formats record it, under different
+	// names, and it is reported raw rather than translated: the value the agent
+	// wrote is the one that will still be true after they rename something.
+	Surface string
+
 	// Title is what the agent named this session, taken from the transcript
 	// itself rather than from any sidecar the app keeps: the app's own index only
 	// holds sessions currently open in its sidebar, so it forgets a conversation
@@ -42,6 +48,8 @@ func Peek(format string, r io.ReadSeeker) (Preview, error) {
 	switch format {
 	case "jsonl-tree":
 		return peekJSONLTree(r)
+	case "jsonl-events":
+		return peekEvents(r)
 	case "":
 		return Preview{}, errors.New("no transcript format configured for this agent")
 	default:
@@ -68,6 +76,9 @@ func peekJSONLTree(r io.ReadSeeker) (Preview, error) {
 		// A title the person typed beats one the agent generated, and a later
 		// title beats an earlier one: both get revised as a session finds its
 		// subject.
+		if rec.Entrypoint != "" && preview.Surface == "" {
+			preview.Surface = rec.Entrypoint
+		}
 		if rec.CustomTitle != "" {
 			preview.Title = rec.CustomTitle
 		} else if rec.AITitle != "" && preview.Title == "" {
@@ -99,6 +110,7 @@ type headRecord struct {
 	Dir         string `json:"cwd"`
 	CustomTitle string `json:"customTitle"`
 	AITitle     string `json:"aiTitle"`
+	Entrypoint  string `json:"entrypoint"`
 }
 
 // scan walks JSON lines, dropping the first when the read began mid-file and so

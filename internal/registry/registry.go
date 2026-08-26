@@ -26,8 +26,16 @@ import (
 // block asks it to write its own handoff — which is why the tool ships one
 // reader and still works with everything.
 type Agent struct {
+	// Transcripts is one glob, or several separated by commas. Several, because an
+	// agent may keep its sessions in more than one place — one directory for the
+	// current ones and another for the archived — and no single glob spans them.
 	Transcripts string `json:"transcripts"`
 	Normalize   string `json:"normalize"`
+
+	// Index is a file that names an agent's sessions, when the titles are not in
+	// the transcripts themselves. One format records its title inside the
+	// conversation; another keeps a separate list. Optional.
+	Index string `json:"index,omitempty"`
 
 	// Launch is the command that starts this agent, for opening a new session
 	// with a conversation already in it. Optional: an agent with no launch
@@ -42,15 +50,24 @@ type Registry map[string]Agent
 // nothing at all, since the context file is a shared standard.
 func Default() Registry {
 	return Registry{
+		// One entry covers a terminal, a desktop app and an editor extension:
+		// they are the same program underneath and they all write here.
 		"claude-code": {
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
 			Launch:      "claude",
 		},
-		// Everything else is added by editing this file: a glob for its
-		// transcripts and the format they are in. No code, no release.
-		"codex":  {},
-		"gemini": {},
+		"codex": {
+			Transcripts: "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
+			Normalize:   "jsonl-events",
+			Index:       "~/.codex/session_index.jsonl",
+			Launch:      "codex",
+		},
+		// Listed with no format because nobody has written a reader for it. It
+		// still appears in hop doctor, which is how you find out.
+		"gemini": {
+			Launch: "gemini",
+		},
 	}
 }
 
@@ -108,6 +125,9 @@ func merge(r Registry) Registry {
 		}
 		if theirs.Launch == "" {
 			theirs.Launch = shipped.Launch
+		}
+		if theirs.Index == "" {
+			theirs.Index = shipped.Index
 		}
 		r[key] = theirs
 	}

@@ -29,6 +29,8 @@ var (
 	// errHelp is a question, not a mistake. The flag package already printed the
 	// answer, so main says nothing more and exits zero.
 	errHelp = errors.New("help")
+	// errCancelled is somebody backing out of a prompt. An answer, not a failure.
+	errCancelled = errors.New("cancelled")
 )
 
 type command struct {
@@ -41,8 +43,8 @@ type command struct {
 func commands() []command {
 	return []command{
 		{"ls", "", "the sessions on this machine, newest first", runList},
-		{"start", "<session>", "open a new session with a conversation already in it", runStart},
-		{"copy", "<session>", "put a conversation on the clipboard, to paste anywhere", runCopy},
+		{"start", "[session]", "open a new session with a conversation already in it", runStart},
+		{"copy", "[session]", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
@@ -65,7 +67,7 @@ func main() {
 			continue
 		}
 		switch err := c.run(args[1:]); {
-		case err == nil, errors.Is(err, errHelp):
+		case err == nil, errors.Is(err, errHelp), errors.Is(err, errCancelled):
 			os.Exit(exitOK)
 		case errors.Is(err, errUsage):
 			fmt.Fprintf(os.Stderr, "hop %s: %v\n", c.name, err)
@@ -88,8 +90,8 @@ Two ways to use it. Ask an agent — "bring me the thread about billing" — and
 reaches grasshopper over MCP without you typing anything. Or do it yourself:
 
     hop ls                       see what is on this machine
-    hop start <session>          open a new session with that conversation in it
-    hop copy <session>           put it on the clipboard, to paste anywhere
+    hop copy                     pick one with the arrows, put it on the clipboard
+    hop start                    pick one, open a new session with it already in it
 
 usage: hop <command> [flags]
 
