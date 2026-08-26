@@ -17,13 +17,29 @@ func Transcripts(a Agent) []string {
 	})
 }
 
-// OnPath reports whether an agent's launch command can actually be run.
-func OnPath(launch string) bool {
-	if launch == "" {
-		return false
+// Launcher finds the command that starts an agent, trying each candidate in turn:
+// a bare name on PATH, or a path to a file that is there and executable.
+//
+// An app that ships its own command line inside its bundle is still installed,
+// whatever PATH says about it.
+func Launcher(a Agent) (string, bool) {
+	for _, candidate := range strings.Split(a.Launch, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if !strings.ContainsRune(candidate, os.PathSeparator) {
+			if found, err := exec.LookPath(candidate); err == nil {
+				return found, true
+			}
+			continue
+		}
+		path := expand(candidate)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() && info.Mode()&0o111 != 0 {
+			return path, true
+		}
 	}
-	_, err := exec.LookPath(launch)
-	return err == nil
+	return "", false
 }
 
 // Index is the file naming an agent's sessions, when it keeps one.

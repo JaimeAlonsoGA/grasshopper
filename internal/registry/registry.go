@@ -48,9 +48,14 @@ type Agent struct {
 	// an answer. Optional: an unnamed surface is shown as the agent recorded it.
 	Surfaces map[string]string `json:"surfaces,omitempty"`
 
-	// Launch is the command that starts this agent, for opening a new session
-	// with a conversation already in it. Optional: an agent with no launch
-	// command can still be listed, read, and copied to the clipboard.
+	// Launch is where to find the command that starts this agent: a name to look
+	// up on PATH, a path to a file, or several of either separated by commas and
+	// tried in order.
+	//
+	// Several, because an app can ship its own command line inside itself without
+	// putting it on anybody's PATH — the ChatGPT app carries a working codex
+	// binary in its Resources folder. "Not installed" was the wrong answer for
+	// something already on the disk.
 	Launch string `json:"launch,omitempty"`
 }
 
@@ -67,7 +72,7 @@ func Default() Registry {
 			Name:        "Claude Code",
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
-			Launch:      "claude",
+			Launch:      "claude,~/.local/bin/claude,/opt/homebrew/bin/claude",
 			Surfaces: map[string]string{
 				"cli":            "Claude Code, terminal",
 				"claude-desktop": "Claude desktop app",
@@ -80,7 +85,7 @@ func Default() Registry {
 			Transcripts: "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
 			Normalize:   "jsonl-events",
 			Index:       "~/.codex/session_index.jsonl",
-			Launch:      "codex",
+			Launch:      "codex,/Applications/ChatGPT.app/Contents/Resources/codex",
 			Surfaces: map[string]string{
 				"Codex Desktop": "ChatGPT desktop app",
 				"Codex CLI":     "Codex, terminal",
@@ -105,9 +110,14 @@ func Home() string {
 
 func Path() string { return filepath.Join(Home(), "registry.json") }
 
-// Load reads the registry, falling back to the shipped default when there is no
-// file yet. Reading never writes: a command that only wants to know which agents
-// exist has no business creating files as a side effect.
+// Load reads the registry: the shipped agents, with the user's file laid over
+// them field by field.
+//
+// The file holds changes, not a copy of the defaults. That is the whole point:
+// grasshopper will never overwrite a file somebody may have edited, so a file
+// containing copies of the defaults freezes them at the version that wrote it —
+// and a glob or a launch path improved later never reaches anybody. Three
+// improvements were silently lost that way before this worked like this.
 func Load() (Registry, error) {
 	b, err := os.ReadFile(Path())
 	if err != nil {
@@ -116,64 +126,59 @@ func Load() (Registry, error) {
 		}
 		return nil, err
 	}
-	var r Registry
-	if err := json.Unmarshal(b, &r); err != nil {
+	var theirs Registry
+	if err := json.Unmarshal(b, &theirs); err != nil {
 		return nil, fmt.Errorf("%s: %w", Path(), err)
 	}
-	return merge(r), nil
+	return merge(theirs), nil
 }
 
-// merge fills blanks in a known agent from the shipped default, and adds nothing
-// else.
-//
-// The registry is a file people edit and grasshopper never overwrites, which
-// otherwise means a field added in a later version never reaches anybody who
-// already has one. Filling only what is empty keeps their edits, and refusing to
-// add keys they do not have keeps an agent they deleted deleted.
-func merge(r Registry) Registry {
-	for key, shipped := range Default() {
-		theirs, ok := r[key]
-		if !ok {
+// merge lays the user's file over the shipped agents. A field they set wins; a
+// field they left out is whatever this version ships. An agent only they know
+// about is added as it stands.
+func merge(theirs Registry) Registry {
+	out := Default()
+	for key, override := range theirs {
+		agent, known := out[key]
+		if !known {
+			out[key] = override
 			continue
 		}
-		if theirs.Transcripts == "" {
-			theirs.Transcripts = shipped.Transcripts
+		if override.Name != "" {
+			agent.Name = override.Name
 		}
-		if theirs.Normalize == "" {
-			theirs.Normalize = shipped.Normalize
+		if override.Transcripts != "" {
+			agent.Transcripts = override.Transcripts
 		}
-		if theirs.Launch == "" {
-			theirs.Launch = shipped.Launch
+		if override.Normalize != "" {
+			agent.Normalize = override.Normalize
 		}
-		if theirs.Index == "" {
-			theirs.Index = shipped.Index
+		if override.Launch != "" {
+			agent.Launch = override.Launch
 		}
-		if len(theirs.Surfaces) == 0 {
-			theirs.Surfaces = shipped.Surfaces
+		if override.Index != "" {
+			agent.Index = override.Index
 		}
-		if theirs.Name == "" {
-			theirs.Name = shipped.Name
+		if len(override.Surfaces) > 0 {
+			agent.Surfaces = override.Surfaces
 		}
-		r[key] = theirs
+		out[key] = agent
 	}
-	return r
+	return out
 }
 
-// Write materialises the default registry so it can be edited. It refuses to
-// touch a file that already exists: the user's edits are the point of the file.
+// Write creates an empty registry, ready to be edited. Empty, not a copy of the
+// defaults: a copy would freeze this version's globs and launch paths into
+// somebody's file forever, and grasshopper will not overwrite it to fix them.
 func Write() (created bool, err error) {
 	path := Path()
 	if _, err := os.Stat(path); err == nil {
 		return false, nil
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return false, err
 	}
-	b, err := json.MarshalIndent(Default(), "", "  ")
-	if err != nil {
-		return false, err
-	}
-	return true, os.WriteFile(path, append(b, '\n'), 0o644)
+	return true, os.WriteFile(path, []byte("{}\n"), 0o600)
 }
 
 // Get resolves a key, and says what the alternatives were when it cannot.

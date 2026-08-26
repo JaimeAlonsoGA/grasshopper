@@ -28,11 +28,11 @@ func choose(args []string, prompt string) (sessions.Session, error) {
 
 	rows := make([]pick.Row, 0, len(all))
 	for _, s := range all {
+		// Not dimmed by age: the list is already sorted newest first, so dimming
+		// the old ones repeats what the order says, and reads as a few rows being
+		// arbitrarily lit up.
 		rows = append(rows, pick.Row{
 			Cells: []string{s.ID, ago(s.When), surface(s), truncate(s.Label(), titleWidth)},
-			// Everything but the recently-written is dimmed, so what is still
-			// going stands out without needing a column of its own.
-			Muted: !s.Active,
 		})
 	}
 

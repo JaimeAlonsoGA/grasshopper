@@ -43,9 +43,8 @@ type command struct {
 func commands() []command {
 	return []command{
 		{"ls", "", "the sessions on this machine, newest first", runList},
-		{"pack", "[session]", "pack a session into a hop you can attach anywhere", runPack},
+		{"pack", "[session]", "pack a session into a hop, and copy a reference to it", runPack},
 		{"to", "[agent] [session]", "send a hop to another agent and open it there", runTo},
-		{"copy", "[session]", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
 		{"source", "", "which apps grasshopper can read, and which are not linked", runSource},
@@ -92,9 +91,8 @@ Two ways to use it. Ask an agent — "bring me the thread about billing" — and
 reaches grasshopper over MCP without you typing anything. Or do it yourself:
 
     hop ls                       see the sessions on this machine
-    hop pack                     pack one into a hop you can attach anywhere
-    hop copy                     put a hop's reference on your clipboard
-    hop copy --full              put the whole hop on your clipboard, for a browser
+    hop pack                     pack one into a hop, reference on your clipboard
+    hop pack --full              the whole hop on your clipboard, for a browser tab
     hop to                       send a hop to another agent — it asks which
     hop source                   which apps are linked
 

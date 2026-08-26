@@ -24,10 +24,9 @@ before removing the binary.
 The document is the thing. Everything else points at it.
 
 ```
-hop pack              pack a session into a hop, print the path
+hop pack              pack a session into a hop, reference on your clipboard
+hop pack --full       the whole hop on your clipboard, for a browser tab
 hop pack --reveal     and show it in Finder, ready to drag into an app
-hop copy              put a hop's reference on your clipboard
-hop copy --full       put the whole hop on your clipboard, for a browser tab
 hop to                send a hop to another agent — it asks which
 hop source            which apps are linked
 ```
@@ -46,9 +45,9 @@ Three ways to hand a document over, in order of how little context they cost:
 
 | | costs | for |
 |---|---|---|
-| `hop pack` | nothing until it is read | attaching, or dragging into a chat |
-| `hop copy` | about 250 bytes | any agent that can read a path |
-| `hop copy --full` | the whole conversation | a browser tab, which cannot read your disk |
+| the file `hop pack` writes | nothing until it is read | attaching, or dragging into a chat |
+| the reference it copies | about 250 bytes | any agent that can read a path |
+| `hop pack --full` | the whole conversation | a browser tab, which cannot read your disk |
 
 Pasting a whole conversation spends the context the handover was supposed to save,
 which is why it is the last option and not the first.
@@ -130,7 +129,12 @@ for anything that lives in a browser tab.
 
 ## Adding an agent
 
-`~/.grasshopper/registry.json` is yours to edit. An agent is a glob and a format:
+`~/.grasshopper/registry.json` holds **your changes**, not a copy of the defaults —
+it starts empty. A field you set wins; everything you leave out is whatever the
+current version ships, which is how an improved glob or launch path reaches you at
+all. `hop source --repair` drops overrides the built-in values already handle.
+
+An agent is a glob and a format:
 
 ```json
 { "some-agent": {

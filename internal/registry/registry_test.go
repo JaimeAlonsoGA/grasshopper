@@ -35,10 +35,11 @@ func TestLoadFallsBackWithoutWriting(t *testing.T) {
 	}
 }
 
-// A field added in a later version has to reach somebody who already has a
-// registry, because grasshopper never overwrites theirs.
-func TestLoadFillsBlanksInAKnownAgent(t *testing.T) {
-	home(t, `{"claude-code":{"transcripts":"~/mine/*.jsonl","normalize":"jsonl-tree"}}`)
+// The file holds changes, not a copy of the defaults. A field somebody set wins;
+// everything they left out is whatever this version ships — which is how a glob
+// or a launch path improved later actually reaches them.
+func TestLoadOverlaysTheirFileOnTheDefaults(t *testing.T) {
+	home(t, `{"claude-code":{"transcripts":"~/mine/*.jsonl"}}`)
 	r, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -48,22 +49,26 @@ func TestLoadFillsBlanksInAKnownAgent(t *testing.T) {
 		t.Errorf("overwrote their edit: %q", got.Transcripts)
 	}
 	if got.Launch != Default()["claude-code"].Launch {
-		t.Errorf("Launch = %q, want the shipped default filled in", got.Launch)
+		t.Errorf("Launch = %q, want this version's value", got.Launch)
+	}
+	if got.Normalize != Default()["claude-code"].Normalize {
+		t.Errorf("Normalize = %q, want this version's value", got.Normalize)
 	}
 }
 
-// An agent they deleted stays deleted. Filling blanks must not become adding keys.
-func TestLoadDoesNotResurrectADeletedAgent(t *testing.T) {
+// An agent only they know about is added as it stands.
+func TestLoadKeepsAnAgentOfTheirOwn(t *testing.T) {
 	home(t, `{"mine":{"transcripts":"~/mine/*.jsonl","normalize":"jsonl-tree","launch":"mine"}}`)
 	r, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r) != 1 {
-		t.Fatalf("got %d agents, want only theirs: %v", len(r), r.Keys())
+	if r["mine"].Launch != "mine" {
+		t.Errorf("their agent was lost: %+v", r["mine"])
 	}
-	if _, back := r["claude-code"]; back {
-		t.Error("a deleted agent came back")
+	// And the shipped ones are still there, because the file is an overlay.
+	if _, ok := r["claude-code"]; !ok {
+		t.Error("the shipped agents went missing")
 	}
 }
 
@@ -78,7 +83,7 @@ func TestLoadReportsABrokenFile(t *testing.T) {
 	}
 }
 
-func TestWriteOnlyCreates(t *testing.T) {
+func TestWriteCreatesAnEmptyFile(t *testing.T) {
 	home(t, "")
 	created, err := Write()
 	if err != nil || !created {
@@ -88,7 +93,13 @@ func TestWriteOnlyCreates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	edited := strings.Replace(string(body), "claude-code", "renamed", 1)
+	// Empty, not a copy of the defaults: a copy freezes this version's globs and
+	// launch paths into somebody's file forever.
+	if strings.TrimSpace(string(body)) != "{}" {
+		t.Errorf("wrote %q, want an empty object", body)
+	}
+
+	edited := `{"mine":{"launch":"mine"}}`
 	if err := os.WriteFile(Path(), []byte(edited), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -98,6 +109,41 @@ func TestWriteOnlyCreates(t *testing.T) {
 	}
 	if after, _ := os.ReadFile(Path()); string(after) != edited {
 		t.Error("an edited registry was overwritten")
+	}
+}
+
+// An app can ship its own command line inside itself without putting it on
+// anybody's PATH. "Not installed" was the wrong answer for something on the disk.
+func TestLauncherTriesEveryCandidate(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	bundled := filepath.Join(dir, "Some.app", "Resources", "tool")
+	if err := os.MkdirAll(filepath.Dir(bundled), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bundled, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok := Launcher(Agent{Launch: "definitely-not-a-real-command," + bundled})
+	if !ok || got != bundled {
+		t.Errorf("Launcher = %q, %v; want the bundled one", got, ok)
+	}
+	// A path that is there but not executable is not a launcher.
+	plain := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(plain, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := Launcher(Agent{Launch: plain}); ok {
+		t.Error("a non-executable file was accepted")
+	}
+	if _, ok := Launcher(Agent{}); ok {
+		t.Error("an agent with no launch command reported one")
+	}
+	// A leading ~ is resolved, because the registry is a file people edit.
+	if _, ok := Launcher(Agent{Launch: "~/Some.app/Resources/tool"}); !ok {
+		t.Error("a home-relative path was not expanded")
 	}
 }
 

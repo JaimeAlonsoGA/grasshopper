@@ -150,21 +150,14 @@ func verdictFor(s registry.Status, found int) (verdict, note string) {
 	}
 }
 
-// doRepair rewrites only the globs this version knows have moved, and only those.
-// Everything else in the file — including agents grasshopper has never heard of —
-// is copied through as the bytes somebody typed.
+// doRepair drops overrides that this version does better, so the shipped value
+// takes over. It removes rather than rewrites: a field that is not in the file is
+// a field that keeps improving with every version, and a field that is copies
+// today's value in forever.
+//
+// Only fields grasshopper can prove are worse are touched, and only for agents it
+// ships. An agent somebody added themselves is left exactly as they wrote it.
 func doRepair(statuses []registry.Status) error {
-	var stale []registry.Status
-	for _, s := range statuses {
-		if s.Stale() {
-			stale = append(stale, s)
-		}
-	}
-	if len(stale) == 0 {
-		fmt.Print("\nNothing to repair.\n")
-		return nil
-	}
-
 	before, err := os.ReadFile(registry.Path())
 	if err != nil {
 		return err
@@ -174,13 +167,51 @@ func doRepair(statuses []registry.Status) error {
 		return fmt.Errorf("%s: %w", registry.Path(), err)
 	}
 
-	for _, s := range stale {
-		entry, ok := file[s.Key]
-		if !ok {
+	var dropped []string
+	for key, entry := range file {
+		shipped, known := registry.Default()[key]
+		if !known {
 			continue
 		}
-		entry["transcripts"] = registry.Default()[s.Key].Transcripts
-		file[s.Key] = entry
+		// Dropped when the shipped value is at least as good, not only when it is
+		// better. An override that merely repeats today's value is the thing that
+		// froze three improvements out of this file already.
+		for _, field := range []struct {
+			name            string
+			shipped         string
+			shippedSuffices func(theirs string) bool
+		}{
+			{"transcripts", shipped.Transcripts, func(theirs string) bool {
+				return len(registry.Transcripts(shipped)) >=
+					len(registry.Transcripts(registry.Agent{Transcripts: theirs}))
+			}},
+			{"launch", shipped.Launch, func(string) bool {
+				_, ok := registry.Launcher(shipped)
+				return ok
+			}},
+			{"index", shipped.Index, func(string) bool { return shipped.Index != "" }},
+			{"normalize", shipped.Normalize, func(theirs string) bool { return shipped.Normalize == theirs }},
+		} {
+			theirs, present := entry[field.name].(string)
+			if !present || theirs == "" || field.shipped == "" || !field.shippedSuffices(theirs) {
+				continue
+			}
+			delete(entry, field.name)
+			if theirs == field.shipped {
+				dropped = append(dropped, fmt.Sprintf("  %s: dropped %q — it only repeated the built-in value", key, field.name))
+				continue
+			}
+			dropped = append(dropped, fmt.Sprintf("  %s: dropped %q — now uses %q", key, field.name, field.shipped))
+		}
+		if len(entry) == 0 {
+			delete(file, key)
+		} else {
+			file[key] = entry
+		}
+	}
+	if len(dropped) == 0 {
+		fmt.Print("\nNothing to repair.\n")
+		return nil
 	}
 
 	backup := registry.Path() + ".backup"
@@ -196,8 +227,8 @@ func doRepair(statuses []registry.Status) error {
 	}
 
 	fmt.Printf("\nrepaired %s (backup at %s)\n", registry.Path(), backup)
-	for _, s := range stale {
-		fmt.Printf("  %s now reads %s\n", s.Key, registry.Default()[s.Key].Transcripts)
+	for _, line := range dropped {
+		fmt.Println(line)
 	}
 	return nil
 }

@@ -51,8 +51,9 @@ func runTo(args []string) error {
 	if err != nil {
 		return err
 	}
-	if agent.Launch == "" {
-		return fmt.Errorf("%s cannot be opened from here; hop pack writes a hop you can attach to it instead", reg.Called(key))
+	binary, ok := registry.Launcher(agent)
+	if !ok {
+		return fmt.Errorf("%s is not on this machine, or grasshopper cannot find it.\nhop pack writes a hop you can attach to it instead", reg.Called(key))
 	}
 
 	session, err := choose(rest, "send which session?")
@@ -82,8 +83,14 @@ func runTo(args []string) error {
 		return nil
 	}
 
-	fmt.Fprintf(os.Stderr, "grasshopper: %s → %s\n", b.Code, reg.Called(key))
-	return launch(agent.Launch, b.Source.Dir, []string{prompt})
+	// Where it will open, before it opens: an agent starting in a directory you
+	// were not standing in is a surprise, and some of them ask you to approve it.
+	fmt.Fprintf(os.Stderr, "grasshopper: %s → %s", b.Code, reg.Called(key))
+	if b.Source.Dir != "" {
+		fmt.Fprintf(os.Stderr, " in %s", b.Source.Dir)
+	}
+	fmt.Fprintln(os.Stderr)
+	return launch(binary, b.Source.Dir, []string{prompt})
 }
 
 // whereTo lists the agents that can actually be opened, by the name they go by.
@@ -97,12 +104,14 @@ func whereTo(reg registry.Registry) (string, error) {
 		if agent.Launch == "" {
 			continue
 		}
-		state, muted := "on your PATH", false
-		if !registry.OnPath(agent.Launch) {
-			state, muted = "not installed", true
+		state, muted := "ready", false
+		if found, ok := registry.Launcher(agent); !ok {
+			state, muted = "not found on this machine", true
+		} else if !strings.HasPrefix(found, "/usr") && strings.Count(found, "/") > 3 {
+			state = found
 		}
 		keys = append(keys, key)
-		rows = append(rows, pick.Row{Cells: []string{reg.Called(key), agent.Launch, state}, Muted: muted})
+		rows = append(rows, pick.Row{Cells: []string{reg.Called(key), state}, Muted: muted})
 	}
 	if len(keys) == 0 {
 		return "", errors.New("no agent in your registry can be opened from here; hop pack writes a hop you can attach instead")
@@ -122,12 +131,7 @@ func whereTo(reg registry.Registry) (string, error) {
 // exit code. A wrapper that changes how a program behaves is a wrapper people
 // stop using.
 func launch(binary, dir string, args []string) error {
-	path, err := exec.LookPath(binary)
-	if err != nil {
-		return fmt.Errorf("%s is not on PATH", binary)
-	}
-
-	cmd := exec.Command(path, args...)
+	cmd := exec.Command(binary, args...)
 	// The agent starts where the conversation was happening, which is rarely
 	// where the person typing happens to be standing.
 	if dir != "" {
@@ -159,63 +163,4 @@ func launch(binary, dir string, args []string) error {
 		return err
 	}
 	return nil
-}
-
-// runCopy is the universal path: anything that cannot be launched can still be
-// pasted into. Every surface on earth accepts a paste.
-func runCopy(args []string) error {
-	fs := flags("copy", "[session]")
-	full := fs.Bool("full", false, "the whole conversation inline, for somewhere that cannot read a file")
-	rest, err := parse(fs, args)
-	if err != nil {
-		return err
-	}
-	session, err := choose(rest, "copy which session?")
-	if err != nil {
-		return err
-	}
-	b, err := session.Load(bundle.Cap)
-	if err != nil {
-		return err
-	}
-
-	// The file is written either way, so the pointer is always valid and --full is
-	// never the only copy.
-	path, err := store.Write(b)
-	if err != nil {
-		return err
-	}
-
-	// A pointer by default: pasting a whole conversation spends the context the
-	// handover was meant to save. --full is for a browser tab, which cannot read
-	// a file on this machine.
-	payload := bundle.Pointer(b, path)
-	if *full {
-		payload = bundle.Render(b)
-	}
-	if err := toClipboard(payload); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(os.Stderr, "grasshopper: %s · %s\n", b.Code, b.Source.Title)
-	if *full {
-		fmt.Fprintf(os.Stderr, "%d bytes on the clipboard — the whole conversation.\n", len(payload))
-		return nil
-	}
-	fmt.Fprintf(os.Stderr, "%d bytes on the clipboard, pointing at %s\n", len(payload), path)
-	fmt.Fprintf(os.Stderr, "Paste it where an agent can read files. For a browser tab, hop copy --full.\n")
-	return nil
-}
-
-func toClipboard(text string) error {
-	for _, candidate := range [][]string{{"pbcopy"}, {"wl-copy"}, {"xclip", "-selection", "clipboard"}} {
-		path, err := exec.LookPath(candidate[0])
-		if err != nil {
-			continue
-		}
-		cmd := exec.Command(path, candidate[1:]...)
-		cmd.Stdin = strings.NewReader(text)
-		return cmd.Run()
-	}
-	return fmt.Errorf("no clipboard command found; pipe hop show instead")
 }
