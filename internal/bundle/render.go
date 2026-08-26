@@ -125,7 +125,10 @@ func renderTurn(t Turn) string {
 // alone tells them nothing.
 func Pointer(b Bundle, path string) string {
 	var s strings.Builder
-	fmt.Fprintf(&s, "Read %s — a record of an earlier session", path)
+	// Plain ASCII on purpose: this line travels through clipboards and terminals
+	// that still prefer a legacy encoding, and an em dash arrives there as a
+	// question mark.
+	fmt.Fprintf(&s, "Read %s - a record of an earlier session", path)
 	if b.Source.Title != "" {
 		fmt.Fprintf(&s, ", %q", b.Source.Title)
 	}

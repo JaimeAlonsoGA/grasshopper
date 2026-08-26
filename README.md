@@ -31,9 +31,15 @@ hop to                open a hop in a command-line agent — it asks which
 hop source            which apps are linked
 ```
 
-`hop pack` always does two things: it writes the hop to a file, and it copies a
-short reference to that file. The file is the artefact — attach it, or drag it into
-a chat window. The reference is for pasting where an agent can read a path.
+`hop pack` puts **both the file and a reference to it** on your clipboard, so one
+cmd-v does the right thing wherever it lands:
+
+- a chat window that takes attachments attaches the file
+- a terminal agent gets a path it can read
+- `--full` puts the whole conversation there instead, for a browser tab
+
+Nobody has to go and find the file. `--reveal` still opens it in Finder if you
+would rather drag it.
 
 `hop to` is for **command-line agents only** — it starts a program, so a desktop
 app or a browser tab cannot be a destination. It asks where rather than expecting
@@ -49,11 +55,11 @@ scripts work.
 
 Three ways to hand a document over, in order of how little context they cost:
 
-| | costs | for |
+| what lands | costs | where |
 |---|---|---|
-| the file `hop pack` writes | nothing until it is read | attaching, or dragging into a chat |
-| the reference it copies | about 250 bytes | any agent that can read a path |
-| `hop pack --full` | the whole conversation | a browser tab, which cannot read your disk |
+| the file | nothing until it is opened | a chat that takes attachments |
+| the reference | about 250 bytes | any agent that can read a path |
+| `--full`, the whole thing | the whole conversation | a browser tab, which cannot read your disk |
 
 Pasting a whole conversation spends the context the handover was supposed to save,
 which is why it is the last option and not the first.

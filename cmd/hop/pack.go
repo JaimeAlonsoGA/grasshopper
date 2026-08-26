@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -41,29 +42,37 @@ func runPack(args []string) error {
 	// A reference by default: pasting a whole conversation spends the context the
 	// handover was meant to save. --full is for a browser tab, which cannot read a
 	// file on this machine.
-	clipboard := bundle.Pointer(b, path)
+	text := bundle.Pointer(b, path)
 	if *full {
-		clipboard = bundle.Render(b)
+		text = bundle.Render(b)
 	}
-	copied := toClipboard(clipboard) == nil
+	// The file goes on the clipboard beside the text, so one paste does the right
+	// thing wherever it lands.
+	attached, copied := toClipboard(path, text)
 
 	// The path alone on stdout, so it can be piped or passed to another command.
 	// Everything a person reads goes to stderr.
 	fmt.Println(path)
 
-	// Both artefacts named, because the file is the point and the clipboard was
-	// the only one anybody could see.
 	fmt.Fprintf(os.Stderr, "\n%s · %s · %s\n", b.Code, b.Source.Title, b.Content())
-	fmt.Fprintf(os.Stderr, "  file       %s\n", path)
-	switch {
-	case !copied:
-		fmt.Fprint(os.Stderr, "  clipboard  nothing — no clipboard command on this machine\n")
-	case *full:
-		fmt.Fprintf(os.Stderr, "  clipboard  the whole hop, %d bytes\n", len(clipboard))
-	default:
-		fmt.Fprintf(os.Stderr, "  clipboard  a reference to the file, %d bytes\n", len(clipboard))
+	kind := "a reference to it"
+	if *full {
+		kind = fmt.Sprintf("the whole hop, %d bytes", len(text))
 	}
-	fmt.Fprint(os.Stderr, "\nAttach the file, or paste the reference where an agent can read files.\n")
+	switch {
+	case attached:
+		fmt.Fprintf(os.Stderr, "  clipboard  the file, and %s\n", kind)
+		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
+		fmt.Fprint(os.Stderr, "\nPress cmd-v. A chat that takes attachments takes the file; anywhere else\n")
+		fmt.Fprint(os.Stderr, "gets the text.\n")
+	case copied:
+		fmt.Fprintf(os.Stderr, "  clipboard  %s\n", kind)
+		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
+		fmt.Fprint(os.Stderr, "\nPaste it, or attach the file.\n")
+	default:
+		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
+		fmt.Fprint(os.Stderr, "\nNo clipboard command on this machine — the file above is the hop.\n")
+	}
 	if !*full {
 		fmt.Fprint(os.Stderr, "For a browser tab, which cannot read your disk: hop pack --full.\n")
 	}
@@ -90,7 +99,19 @@ func showInFileManager(path string) error {
 	return fmt.Errorf("no file manager on PATH")
 }
 
-func toClipboard(text string) error {
+// toClipboard puts the file and the text on the clipboard together, and reports
+// which of the two made it.
+//
+// Both, because one paste has to work in three different kinds of destination: a
+// chat window that takes attachments wants the file, a terminal agent wants a path
+// it can read, and a browser tab wants the words. A clipboard holding several
+// formats lets each of them take what it understands, which is how copying a file
+// in a file manager has always worked.
+func toClipboard(path, text string) (attached, copied bool) {
+	if err := bothFlavours(path, text); err == nil {
+		return true, true
+	}
+	// Everywhere else, or if that failed: the text alone.
 	for _, candidate := range [][]string{{"pbcopy"}, {"wl-copy"}, {"xclip", "-selection", "clipboard"}} {
 		binary, err := exec.LookPath(candidate[0])
 		if err != nil {
@@ -98,7 +119,42 @@ func toClipboard(text string) error {
 		}
 		cmd := exec.Command(binary, candidate[1:]...)
 		cmd.Stdin = strings.NewReader(text)
-		return cmd.Run()
+		return false, cmd.Run() == nil
 	}
-	return fmt.Errorf("no clipboard command found")
+	return false, false
+}
+
+// bothFlavours puts a file reference and a string on the clipboard together.
+//
+// Written through the pasteboard directly rather than with "set the clipboard to",
+// because AppleScript writes a string in MacRoman whatever flavour it is asked
+// for, and every em dash in a hop came out as a question mark. Only macOS offers
+// two flavours from a command line without a library; elsewhere the caller falls
+// back to text alone.
+func bothFlavours(path, text string) error {
+	binary, err := exec.LookPath("osascript")
+	if err != nil {
+		return err
+	}
+	script := fmt.Sprintf(`ObjC.import('AppKit');
+const pb = $.NSPasteboard.generalPasteboard;
+pb.clearContents;
+pb.declareTypesOwner($([$.NSPasteboardTypeString, $.NSPasteboardTypeFileURL]), $());
+pb.setStringForType($(%s), $.NSPasteboardTypeString);
+pb.setStringForType($($.NSURL.fileURLWithPath(%s).absoluteString), $.NSPasteboardTypeFileURL);
+`, jsString(text), jsString(path))
+
+	cmd := exec.Command(binary, "-l", "JavaScript")
+	cmd.Stdin = strings.NewReader(script)
+	return cmd.Run()
+}
+
+// jsString quotes a string as a JavaScript literal. JSON's escaping is a subset of
+// JavaScript's, so the standard library already does this exactly.
+func jsString(s string) string {
+	quoted, err := json.Marshal(s)
+	if err != nil {
+		return `""`
+	}
+	return string(quoted)
 }
