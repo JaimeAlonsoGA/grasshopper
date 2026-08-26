@@ -43,6 +43,7 @@ type command struct {
 func commands() []command {
 	return []command{
 		{"ls", "", "the sessions on this machine, newest first", runList},
+		{"file", "[session]", "write a conversation to a document you can attach anywhere", runFile},
 		{"start", "[session]", "open a new session with a conversation already in it", runStart},
 		{"copy", "[session]", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
@@ -91,8 +92,10 @@ Two ways to use it. Ask an agent — "bring me the thread about billing" — and
 reaches grasshopper over MCP without you typing anything. Or do it yourself:
 
     hop ls                       see what is on this machine
-    hop copy                     pick one with the arrows, put it on the clipboard
-    hop start                    pick one, open a new session with it already in it
+    hop file                     write one to a document you can attach anywhere
+    hop copy                     put a reference to one on your clipboard
+    hop copy --full              put the whole thing on your clipboard, for a browser
+    hop start                    open a new session with one already in it
     hop sources                  check everything is hooked up
 
 usage: hop <command> [flags]

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
+	"time"
 
 	"grasshopper/internal/registry"
 	"grasshopper/internal/sessions"
@@ -23,6 +25,10 @@ func runSources(args []string) error {
 		return err
 	}
 
+	reg, err := registry.Load()
+	if err != nil {
+		return err
+	}
 	statuses, err := registry.Discover()
 	if err != nil {
 		return err
@@ -32,40 +38,87 @@ func runSources(args []string) error {
 		return err
 	}
 
+	// Grouped by front end, not by registry key: what somebody installed was a
+	// terminal, a desktop app and an editor extension, and telling them they have
+	// "claude-code" answers a question they did not ask.
+	found := map[string]int{}
+	newest := map[string]time.Time{}
 	perAgent := map[string]int{}
 	for _, s := range all {
+		name := reg.Surface(s.Agent, s.Surface)
+		found[name]++
 		perAgent[s.Agent]++
+		if s.When.After(newest[name]) {
+			newest[name] = s.When
+		}
 	}
 
-	rows := [][]string{{"SOURCE", "SESSIONS", "STATUS"}}
-	var notes []string
-	linked, broken := 0, 0
+	rows := [][]string{{"APP", "SESSIONS", "LAST USED", "STATUS"}}
+	for _, name := range sortedByCount(found) {
+		rows = append(rows, []string{name, fmt.Sprintf("%d", found[name]), ago(newest[name]), "linked"})
+	}
 
+	// An agent whose glob has been overtaken is a problem and gets a row. One
+	// that is simply not configured is not a source at all — listing it beside
+	// apps somebody actually has is how a report becomes noise.
+	var notes, unconfigured []string
 	for _, s := range statuses {
+		if perAgent[s.Key] > 0 && !s.Stale() {
+			continue
+		}
+		if s.Agent.Transcripts == "" {
+			unconfigured = append(unconfigured, s.Key)
+			continue
+		}
 		verdict, note := verdictFor(s, perAgent[s.Key])
-		rows = append(rows, []string{s.Key, count(perAgent[s.Key]), verdict})
+		rows = append(rows, []string{s.Key, count(perAgent[s.Key]), "—", verdict})
 		if note != "" {
 			notes = append(notes, fmt.Sprintf("%s: %s", s.Key, note))
-		}
-		if s.Stale() {
-			broken++
-		} else if perAgent[s.Key] > 0 {
-			linked++
 		}
 	}
 
 	writeTable(os.Stdout, rows)
-	fmt.Printf("\n%d of %d sources linked, %d readable sessions.\n", linked, len(statuses), len(all))
+	fmt.Printf("\n%s across %s, %d readable.\n",
+		plural(len(found)), plural2(len(perAgent), "agent", "agents"), len(all))
 	for _, note := range notes {
 		fmt.Printf("\n%s\n", note)
 	}
-	if broken > 0 && !*repair {
+
+	stale := false
+	for _, s := range statuses {
+		if s.Stale() {
+			stale = true
+		}
+	}
+	if stale && !*repair {
 		fmt.Print("\nRun hop sources --repair to fix the globs this version knows have moved.\n")
+	}
+	if len(unconfigured) > 0 {
+		fmt.Printf("\nIn your registry but not set up: %s.\n", strings.Join(unconfigured, ", "))
+	}
+	if !stale && len(notes) == 0 {
+		fmt.Printf("Anything else is added by editing %s — a glob and a format, no code.\n", registry.Path())
 	}
 	if *repair {
 		return doRepair(statuses)
 	}
 	return nil
+}
+
+// sortedByCount orders the front ends by how much they are used, so the one
+// somebody lives in is the first line they read.
+func sortedByCount(counts map[string]int) []string {
+	names := make([]string, 0, len(counts))
+	for name := range counts {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		if counts[names[i]] != counts[names[j]] {
+			return counts[names[i]] > counts[names[j]]
+		}
+		return names[i] < names[j]
+	})
+	return names
 }
 
 // verdictFor turns a status into a sentence. The distinction that matters is
@@ -76,8 +129,8 @@ func verdictFor(s registry.Status, found int) (verdict, note string) {
 	switch {
 	case s.Stale():
 		return fmt.Sprintf("missing %d", s.Shipped-found), fmt.Sprintf(
-			"its files moved. Your glob finds %s; this version's finds %d, at\n  %s\nRun hop sources --repair, or edit %s.",
-			plural(found), s.Shipped, registry.Default()[s.Key].Transcripts, registry.Path())
+			"its files moved. Your glob finds %d; this version's finds %d, at\n  %s\nRun hop sources --repair, or edit %s.",
+			found, s.Shipped, registry.Default()[s.Key].Transcripts, registry.Path())
 
 	case !s.Readable && s.Agent.Transcripts == "":
 		return "not configured", fmt.Sprintf(
@@ -92,11 +145,8 @@ func verdictFor(s registry.Status, found int) (verdict, note string) {
 	case s.StateDir == "":
 		return "not installed", ""
 
-	case found == 0:
-		return "installed, no sessions yet", ""
-
 	default:
-		return "linked", ""
+		return "no sessions yet", ""
 	}
 }
 
@@ -152,9 +202,11 @@ func doRepair(statuses []registry.Status) error {
 	return nil
 }
 
-func plural(n int) string {
+func plural(n int) string { return plural2(n, "app", "apps") }
+
+func plural2(n int, one, many string) string {
 	if n == 1 {
-		return "1 session"
+		return "1 " + one
 	}
-	return fmt.Sprintf("%d sessions", n)
+	return fmt.Sprintf("%d %s", n, many)
 }

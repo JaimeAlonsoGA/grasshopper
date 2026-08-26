@@ -32,9 +32,16 @@ type Row struct {
 // should not print an error.
 var ErrCancelled = fmt.Errorf("cancelled")
 
-// reserved is the lines the frame takes: a title, the column header, a blank, and
-// the footer. The rest of the terminal is list.
-const reserved = 6
+const (
+	// maxRows is how much list is shown at once. A window is easier to read than
+	// a wall: forty rows is a thing you scan and give up on, ten is a thing you
+	// look at. Every chooser worth using picks a number around here.
+	maxRows = 10
+
+	// reserved is the lines the frame takes around the list — the title, a blank,
+	// the scroll hints, the footer.
+	reserved = 8
+)
 
 // From chooses a row. When the terminal cannot be put into raw mode — a pipe, a
 // dumb terminal, a CI job — it degrades to a numbered list read line by line,
@@ -55,21 +62,14 @@ func From(title string, header []string, rows []Row) (int, error) {
 	}
 	defer restore()
 
-	return (&chooser{
-		tty:    tty,
-		out:    tty,
-		title:  title,
-		header: header,
-		all:    rows,
-	}).run()
+	return (&chooser{tty: tty, out: tty, title: title, all: rows}).run()
 }
 
 type chooser struct {
-	tty    *os.File
-	out    io.Writer
-	title  string
-	header []string
-	all    []Row
+	tty   *os.File
+	out   io.Writer
+	title string
+	all   []Row
 
 	filter  string
 	visible []int // indices into all, after filtering
@@ -172,49 +172,65 @@ func (c *chooser) move(by int) {
 }
 
 func (c *chooser) draw() {
-	widths := columns(append([][]string{c.header}, cells(c.all)...))
+	widths := columns(cells(c.all))
 
 	var s strings.Builder
 	s.WriteString("\x1b[H\x1b[2J") // home, and clear what the last frame drew
 
-	fmt.Fprintf(&s, "  %s\r\n", bold(c.title))
-	fmt.Fprintf(&s, "  %s\r\n", dim(row(c.header, widths)))
+	// Title on the left, the count on the right, and the filter shown as
+	// something being typed rather than as a status message.
+	fmt.Fprintf(&s, "\r\n  %s   %s\r\n\r\n", accent(c.title), dim(c.count()))
 
 	if len(c.visible) == 0 {
-		fmt.Fprintf(&s, "\r\n  %s\r\n", dim("nothing matches "+strconv.Quote(c.filter)))
+		fmt.Fprintf(&s, "  %s\r\n", dim("nothing matches — backspace to widen"))
 	}
+
 	end := c.top + c.height
 	if end > len(c.visible) {
 		end = len(c.visible)
 	}
-	for i := c.top; i < end; i++ {
-		r := c.all[c.visible[i]]
-		text := row(r.Cells, widths)
-		switch {
-		case i == c.cursor:
-			text = selected(" › " + text)
-		case r.Muted:
-			text = "   " + dim(text)
-		default:
-			text = "   " + text
-		}
-		s.WriteString(text + "\r\n")
+	// Hints where the list continues, so a window never looks like the whole of it.
+	if c.top > 0 {
+		fmt.Fprintf(&s, "  %s\r\n", dim(fmt.Sprintf("   ↑ %d above", c.top)))
+	} else if len(c.visible) > 0 {
+		s.WriteString("\r\n")
 	}
 
-	s.WriteString("\r\n")
-	fmt.Fprintf(&s, "  %s\r\n", dim(c.status()))
-	fmt.Fprintf(&s, "  %s", dim("↑↓ move · type to filter · ⏎ choose · esc cancel"))
+	for i := c.top; i < end; i++ {
+		r := c.all[c.visible[i]]
+		if i == c.cursor {
+			fmt.Fprintf(&s, "  %s %s\r\n", accent("›"), bold(row(r.Cells, widths)))
+			continue
+		}
+		text := row(r.Cells, widths)
+		if r.Muted {
+			text = dim(text)
+		}
+		fmt.Fprintf(&s, "    %s\r\n", text)
+	}
+
+	if rest := len(c.visible) - end; rest > 0 {
+		fmt.Fprintf(&s, "  %s\r\n", dim(fmt.Sprintf("   ↓ %d more", rest)))
+	} else {
+		s.WriteString("\r\n")
+	}
+
+	fmt.Fprintf(&s, "\r\n  %s\r\n", dim("type to filter · ↑↓ move · ⏎ choose · esc cancel"))
+	if c.filter != "" {
+		fmt.Fprintf(&s, "  %s %s", dim("filter"), accent(c.filter))
+	}
 	fmt.Fprint(c.out, s.String())
 }
 
-func (c *chooser) status() string {
+// count is the one number worth showing: how much of the list you are looking at.
+func (c *chooser) count() string {
 	if c.filter != "" {
-		return fmt.Sprintf("filter: %s — %d of %d", c.filter, len(c.visible), len(c.all))
+		return fmt.Sprintf("%d of %d match", len(c.visible), len(c.all))
 	}
 	if len(c.visible) > c.height {
-		return fmt.Sprintf("%d of %d", c.cursor+1, len(c.visible))
+		return fmt.Sprintf("%d, showing %d", len(c.visible), c.height)
 	}
-	return fmt.Sprintf("%d sessions", len(c.visible))
+	return fmt.Sprintf("%d", len(c.visible))
 }
 
 // --- keys --------------------------------------------------------------------
@@ -335,7 +351,7 @@ func stty(tty *os.File, args ...string) (string, error) {
 // listHeight is how many rows the list may use. A terminal that will not say how
 // tall it is gets a conservative guess rather than a crash.
 func listHeight() int {
-	const fallback = 15
+	const fallback = maxRows
 	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
 	if err != nil {
 		return fallback
@@ -354,7 +370,12 @@ func listHeight() int {
 	if err != nil || rows-reserved < 3 {
 		return fallback
 	}
-	return rows - reserved
+	// Never more than maxRows, however tall the terminal: the cap is there to
+	// make the list readable, not to fill the screen.
+	if height := rows - reserved; height < maxRows {
+		return height
+	}
+	return maxRows
 }
 
 // --- fallback ----------------------------------------------------------------
@@ -422,6 +443,10 @@ func row(cells []string, widths []int) string {
 // wide.
 func width(s string) int { return len([]rune(s)) }
 
-func dim(s string) string      { return "\x1b[2m" + s + "\x1b[0m" }
-func bold(s string) string     { return "\x1b[1m" + s + "\x1b[0m" }
-func selected(s string) string { return "\x1b[7m" + s + "\x1b[0m" }
+// A cursor and a title in one accent, everything else in weight alone. Colour
+// used once reads as deliberate; colour used everywhere reads as a christmas tree,
+// and it has to survive both a light and a dark terminal — 6 is cyan from the
+// sixteen every theme defines, rather than a hex value that will clash with one.
+func dim(s string) string    { return "\x1b[2m" + s + "\x1b[0m" }
+func bold(s string) string   { return "\x1b[1m" + s + "\x1b[0m" }
+func accent(s string) string { return "\x1b[36m" + s + "\x1b[0m" }

@@ -8,8 +8,7 @@ import (
 
 func sample() *chooser {
 	return &chooser{
-		title:  "choose",
-		header: []string{"ID", "TITLE"},
+		title: "choose",
 		all: []Row{
 			{Cells: []string{"aaaa", "Billing resolver"}},
 			{Cells: []string{"bbbb", "Monorepo cleanup"}, Muted: true},

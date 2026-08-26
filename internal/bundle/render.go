@@ -96,7 +96,9 @@ func (b Bundle) fields() [][2]string {
 	return fields
 }
 
-// content never lies about what is missing.
+// Content never lies about what is missing.
+func (b Bundle) Content() string { return b.content() }
+
 func (b Bundle) content() string {
 	turns := plural(len(b.Turns), "turn", "turns")
 	if b.Omitted == 0 {

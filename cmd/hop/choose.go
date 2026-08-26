@@ -29,14 +29,14 @@ func choose(args []string, prompt string) (sessions.Session, error) {
 	rows := make([]pick.Row, 0, len(all))
 	for _, s := range all {
 		rows = append(rows, pick.Row{
-			Cells: []string{s.ID, ago(s.When), surface(s), truncate(s.Label(), titleWidth), short(s.Dir())},
+			Cells: []string{s.ID, ago(s.When), surface(s), truncate(s.Label(), titleWidth)},
 			// Everything but the recently-written is dimmed, so what is still
 			// going stands out without needing a column of its own.
 			Muted: !s.Active,
 		})
 	}
 
-	i, err := pick.From(prompt, []string{"ID", "WHEN", "FROM", "TITLE", "DIRECTORY"}, rows)
+	i, err := pick.From(prompt, nil, rows)
 	if err != nil {
 		if errors.Is(err, pick.ErrCancelled) {
 			return sessions.Session{}, errCancelled

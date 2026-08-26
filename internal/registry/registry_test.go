@@ -128,8 +128,14 @@ func TestDefaultIsSelfConsistent(t *testing.T) {
 		}
 		// An entry with nothing in it is almost always a half-applied edit, not a
 		// deliberate placeholder.
-		if agent == (Agent{}) {
+		if agent.Transcripts == "" && agent.Normalize == "" && agent.Launch == "" {
 			t.Errorf("%s is entirely empty", key)
+		}
+		// A named surface nothing records is a name that will never be shown.
+		for recorded, named := range agent.Surfaces {
+			if recorded == "" || named == "" {
+				t.Errorf("%s has a blank surface mapping", key)
+			}
 		}
 	}
 }

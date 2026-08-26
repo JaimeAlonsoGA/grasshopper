@@ -37,6 +37,13 @@ type Agent struct {
 	// conversation; another keeps a separate list. Optional.
 	Index string `json:"index,omitempty"`
 
+	// Surfaces names an agent's front ends, keyed by the value its transcripts
+	// record. One agent ships a terminal, a desktop app, an editor extension and
+	// a phone client that all write to the same place, and telling somebody they
+	// have "claude-code" when what they installed was three separate apps is not
+	// an answer. Optional: an unnamed surface is shown as the agent recorded it.
+	Surfaces map[string]string `json:"surfaces,omitempty"`
+
 	// Launch is the command that starts this agent, for opening a new session
 	// with a conversation already in it. Optional: an agent with no launch
 	// command can still be listed, read, and copied to the clipboard.
@@ -56,17 +63,23 @@ func Default() Registry {
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
 			Launch:      "claude",
+			Surfaces: map[string]string{
+				"cli":            "Claude Code, terminal",
+				"claude-desktop": "Claude desktop app",
+				"claude-vscode":  "Claude in VS Code",
+				"remote_mobile":  "Claude on a phone",
+			},
 		},
 		"codex": {
 			Transcripts: "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
 			Normalize:   "jsonl-events",
 			Index:       "~/.codex/session_index.jsonl",
 			Launch:      "codex",
-		},
-		// Listed with no format because nobody has written a reader for it. It
-		// still appears in hop doctor, which is how you find out.
-		"gemini": {
-			Launch: "gemini",
+			Surfaces: map[string]string{
+				"Codex Desktop": "ChatGPT desktop app",
+				"Codex CLI":     "Codex, terminal",
+				"codex_cli_rs":  "Codex, terminal",
+			},
 		},
 	}
 }
@@ -129,6 +142,9 @@ func merge(r Registry) Registry {
 		if theirs.Index == "" {
 			theirs.Index = shipped.Index
 		}
+		if len(theirs.Surfaces) == 0 {
+			theirs.Surfaces = shipped.Surfaces
+		}
 		r[key] = theirs
 	}
 	return r
@@ -158,6 +174,21 @@ func (r Registry) Get(key string) (Agent, error) {
 		return Agent{}, fmt.Errorf("unknown agent %q (registry has: %s)", key, strings.Join(r.Keys(), ", "))
 	}
 	return a, nil
+}
+
+// Surface names one of an agent's front ends. An unrecognised value is returned
+// as it was recorded: a name grasshopper has not been taught is still better than
+// a blank, and it is what will still be true after a rename.
+func (r Registry) Surface(agent, recorded string) string {
+	if named, ok := r[agent].Surfaces[recorded]; ok {
+		return named
+	}
+	if recorded != "" {
+		return recorded
+	}
+	// Older transcripts predate the field. Naming the agent is honest; inventing
+	// a front end for them would not be.
+	return agent + ", surface not recorded"
 }
 
 func (r Registry) Keys() []string {
