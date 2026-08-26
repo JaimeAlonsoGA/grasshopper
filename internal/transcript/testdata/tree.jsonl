@@ -1,0 +1,24 @@
+{"type":"ai-title","aiTitle":"synthetic","sessionId":"s"}
+{"type":"user","uuid":"u1","parentUuid":null,"sessionId":"s","message":{"role":"user","content":"Build plan resolution."}}
+{"type":"assistant","uuid":"u2","parentUuid":"u1","sessionId":"s","message":{"role":"assistant","content":[{"type":"thinking","thinking":"REASONING-MUST-NOT-APPEAR","signature":"abc"},{"type":"text","text":"Implemented ResolvePlan."}]}}
+{"type":"attachment","uuid":"u3","parentUuid":"u2","sessionId":"s","attachment":{"type":"todo_reminder","content":"TODO-MUST-NOT-APPEAR"}}
+{"type":"atis-latch","atis":true,"sessionId":"s"}
+{"type":"assistant","uuid":"u4","parentUuid":"u3","sessionId":"s","message":{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"/x/plan.go","new_string":"TOOL-MUST-NOT-APPEAR"}}]}}
+{"type":"user","uuid":"u5","parentUuid":"u4","sessionId":"s","toolUseResult":{"filePath":"/x/plan.go"},"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"RESULT-MUST-NOT-APPEAR"}]}}
+{"type":"user","uuid":"u6","parentUuid":"u5","sessionId":"s","message":{"role":"user","content":[{"type":"text","text":"ABANDONED-BRANCH-MUST-NOT-APPEAR"}]}}
+{"type":"assistant","uuid":"u6a","parentUuid":"u6","sessionId":"s","message":{"role":"assistant","content":[{"type":"text","text":"ABANDONED-REPLY-MUST-NOT-APPEAR"}]}}
+{"type":"user","uuid":"u7","parentUuid":"u5","sessionId":"s","message":{"role":"user","content":[{"type":"text","text":"<ide_opened_file>The user opened the file /x/plan.go in the IDE.</ide_opened_file>\nThat breaks for trials."}]}}
+{"type":"assistant","uuid":"sc1","parentUuid":"u7","isSidechain":true,"sessionId":"s","message":{"role":"assistant","content":[{"type":"text","text":"SIDECHAIN-MUST-NOT-APPEAR"}]}}
+{"type":"user","uuid":"sc2","parentUuid":"sc1","isSidechain":true,"sessionId":"s","message":{"role":"user","content":"SIDECHAIN-PROMPT-MUST-NOT-APPEAR"}}
+{"type":"assistant","uuid":"u8","parentUuid":"u7","sessionId":"s","message":{"role":"assistant","content":[{"type":"text","text":"Reworked to precedence rules."}]}}
+{"type":"queue-operation","operation":"add","content":"QUEUED-MUST-NOT-APPEAR","sessionId":"s"}
+{"type":"user","uuid":"u9","parentUuid":"u8","sessionId":"s","message":{"role":"user","content":"<task-notification>\n<task-id>abc</task-id>\n<status>completed</status>\n</task-notification>"}}
+{"type":"system","uuid":"u9a","parentUuid":"u9","sessionId":"s","subtype":"hook","level":"info","hookAdditionalContext":"HOOK-MUST-NOT-APPEAR"}
+{"type":"user","uuid":"u10","parentUuid":"u9a","sessionId":"s","message":{"role":"user","content":[{"type":"text","text":"<command-name>/commit</command-name>\n<command-message>commit</command-message>\n<command-args>-m wip</command-args>"}]}}
+{"type":"user","uuid":"u11","parentUuid":"u10","sessionId":"s","message":{"role":"user","content":"[Request interrupted by user for tool use]"}}
+{"type":"frame-link","sessionId":"s","frame":"UNKNOWN-FUTURE-TYPE"}
+{"type":"user","uuid":"u12","parentUuid":"u11","sessionId":"s","message":{"role":"user","content":[{"type":"image","source":{"type":"base64","data":"IMAGE-MUST-NOT-APPEAR"}},{"type":"text","text":"Now write the test."}]}}
+{"type":"assistant","uuid":"u13","parentUuid":"u12","sessionId":"s","message":{"role":"assistant","content":[{"type":"text","text":"Committed."}]}}
+{"truncated-line-from-a-crash": 
+{"type":"last-prompt","lastPrompt":"Now write the test.","leafUuid":"u13","sessionId":"s"}
+{"type":"mode","mode":"default","sessionId":"s"}
