@@ -17,11 +17,30 @@ conversation is **a hop**.
 curl -fsSL https://raw.githubusercontent.com/JaimeAlonsoGA/grasshopper/main/install.sh | sh
 ```
 
-That downloads the binary for your machine, puts it in `~/.local/bin`, and
-registers it with every agent it finds. Nothing else to do.
+That downloads the binary for your machine, puts it in `~/.local/bin`, and runs
+`hop hatch` — which registers it with every agent it finds, counts what it can
+read, and shows you the two ways to use it. Nothing else to do.
 
-From a clone: `make install`. To remove it: `hop uninstall`, then delete the
-binary. Your hops stay in `~/.grasshopper`.
+```
+  🦗  grasshopper v1.0.0
+
+  Wiring it into your agents…
+
+     Claude Code                ✓
+     Codex                      ✓
+
+  Looking around…
+
+     44 sessions in 7 apps
+        Codex, ChatGPT app         24
+        Claude Code, VS Code       8
+        Claude Code, desktop app   7
+        …and 4 more
+```
+
+From a clone: `make install`. Run `hop hatch` again any time — it repairs the
+wiring rather than duplicating it. To remove it: `hop uninstall` unregisters
+everywhere, then delete the binary. Your hops stay in `~/.grasshopper`.
 
 ## Use it without typing anything
 

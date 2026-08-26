@@ -48,7 +48,7 @@ func commands() []command {
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
 		{"source", "", "which apps grasshopper can read, and which are not linked", runSource},
-		{"setup", "", "register grasshopper with every agent on this machine", runSetup},
+		{"hatch", "", "wake grasshopper up on this machine, and show you around", runHatch},
 		{"uninstall", "", "unregister it from every agent", runUninstall},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
 		{"version", "", "print the version and where this binary is", runVersion},
@@ -63,6 +63,12 @@ func main() {
 	}
 	if args[0] == "-v" || args[0] == "--version" {
 		args[0] = "version"
+	}
+
+	// setup is what anybody would guess for this, and a first command that is not
+	// there is a poor first impression.
+	if args[0] == "setup" {
+		args[0] = "hatch"
 	}
 
 	for _, c := range commands() {

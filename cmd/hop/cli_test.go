@@ -309,3 +309,38 @@ func text(t *testing.T, reply map[string]any) string {
 	}
 	return content[0].(map[string]any)["text"].(string)
 }
+
+// The first command anybody runs has to work on a machine with nothing on it, and
+// say something useful rather than nothing.
+func TestHatch(t *testing.T) {
+	s := newSandbox(t)
+	r := s.run("hatch")
+	r.wants(t, 0)
+
+	for _, want := range []string{"grasshopper", "Looking around", "2 sessions", "Billing resolver", "hop pack", "Nothing ever leaves this machine"} {
+		if !strings.Contains(r.stdout, want) {
+			t.Errorf("hatch does not say %q:\n%s", want, r.stdout)
+		}
+	}
+	// setup is what anybody would guess, so it has to be there too.
+	s.run("setup").wants(t, 0)
+}
+
+func TestHatchOnAnEmptyMachine(t *testing.T) {
+	home := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(home); err == nil {
+		home = resolved
+	}
+	s := &sandbox{t: t, home: home}
+	if err := os.MkdirAll(filepath.Join(home, ".grasshopper"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	s.write(filepath.Join(home, ".grasshopper", "registry.json"), "{}")
+
+	r := s.run("hatch")
+	r.wants(t, 0)
+	// Saying "no sessions yet" is an answer. Printing an empty list is not.
+	if !strings.Contains(r.stdout, "no sessions yet") {
+		t.Errorf("an empty machine got no explanation:\n%s", r.stdout)
+	}
+}
