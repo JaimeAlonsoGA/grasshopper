@@ -317,7 +317,8 @@ func TestHatch(t *testing.T) {
 	r := s.run("hatch")
 	r.wants(t, 0)
 
-	for _, want := range []string{"grasshopper", "Looking around", "2 sessions", "Billing resolver", "hop pack", "Nothing ever leaves this machine"} {
+	// Grouped by app, not by session: this is a count, not a listing.
+	for _, want := range []string{"grasshopper", "Wiring it into your agents", "Looking around", "2 sessions", "An Agent", "hop pack", "Nothing ever leaves this machine"} {
 		if !strings.Contains(r.stdout, want) {
 			t.Errorf("hatch does not say %q:\n%s", want, r.stdout)
 		}
