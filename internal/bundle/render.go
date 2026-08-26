@@ -37,7 +37,7 @@ func Render(b Bundle) string {
 
 	// Sliced by runes: every character in the rule is three bytes wide, and a
 	// byte index cuts one in half.
-	fmt.Fprintf(&s, "%s\n", pad("═══ GRASSHOPPER BUNDLE · "+b.Code+" ", '═'))
+	fmt.Fprintf(&s, "%s\n", pad("═══ GRASSHOPPER HOP · "+b.Code+" ", '═'))
 	for _, row := range b.fields() {
 		fmt.Fprintf(&s, "%-10s %s\n", row[0], row[1])
 	}

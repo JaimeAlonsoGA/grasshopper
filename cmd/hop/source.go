@@ -12,14 +12,14 @@ import (
 	"grasshopper/internal/sessions"
 )
 
-// runSources answers "is everything hooked up", which is a different question from
+// runSource answers "is everything hooked up", which is a different question from
 // "what is on this machine" and deserves its own command.
 //
 // It names a verdict per agent rather than printing numbers and leaving the
 // reading to you, and every verdict that is not "fine" comes with the one thing to
 // do about it.
-func runSources(args []string) error {
-	fs := flags("sources", "")
+func runSource(args []string) error {
+	fs := flags("source", "")
 	repair := fs.Bool("repair", false, "rewrite globs this version knows have moved, keeping a backup")
 	if _, err := parse(fs, args); err != nil {
 		return err
@@ -91,7 +91,7 @@ func runSources(args []string) error {
 		}
 	}
 	if stale && !*repair {
-		fmt.Print("\nRun hop sources --repair to fix the globs this version knows have moved.\n")
+		fmt.Print("\nRun hop source --repair to fix the globs this version knows have moved.\n")
 	}
 	if len(unconfigured) > 0 {
 		fmt.Printf("\nIn your registry but not set up: %s.\n", strings.Join(unconfigured, ", "))
@@ -129,7 +129,7 @@ func verdictFor(s registry.Status, found int) (verdict, note string) {
 	switch {
 	case s.Stale():
 		return fmt.Sprintf("missing %d", s.Shipped-found), fmt.Sprintf(
-			"its files moved. Your glob finds %d; this version's finds %d, at\n  %s\nRun hop sources --repair, or edit %s.",
+			"its files moved. Your glob finds %d; this version's finds %d, at\n  %s\nRun hop source --repair, or edit %s.",
 			found, s.Shipped, registry.Default()[s.Key].Transcripts, registry.Path())
 
 	case !s.Readable && s.Agent.Transcripts == "":

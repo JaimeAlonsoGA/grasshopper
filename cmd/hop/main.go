@@ -43,12 +43,12 @@ type command struct {
 func commands() []command {
 	return []command{
 		{"ls", "", "the sessions on this machine, newest first", runList},
-		{"file", "[session]", "write a conversation to a document you can attach anywhere", runFile},
-		{"start", "[session]", "open a new session with a conversation already in it", runStart},
+		{"pack", "[session]", "pack a session into a hop you can attach anywhere", runPack},
+		{"to", "[agent] [session]", "send a hop to another agent and open it there", runTo},
 		{"copy", "[session]", "put a conversation on the clipboard, to paste anywhere", runCopy},
 		{"show", "[session]", "print a session as a bundle", runShow},
 		{"mcp", "", "serve grasshopper to agents over stdio (not for humans)", runMCP},
-		{"sources", "", "check every source is linked, and repair the ones that moved", runSources},
+		{"source", "", "which apps grasshopper can read, and which are not linked", runSource},
 		{"doctor", "", "where grasshopper is looking, and what it found", runDoctor},
 		{"version", "", "print the version and where this binary is", runVersion},
 	}
@@ -91,12 +91,12 @@ func usage(w *os.File) {
 Two ways to use it. Ask an agent — "bring me the thread about billing" — and it
 reaches grasshopper over MCP without you typing anything. Or do it yourself:
 
-    hop ls                       see what is on this machine
-    hop file                     write one to a document you can attach anywhere
-    hop copy                     put a reference to one on your clipboard
-    hop copy --full              put the whole thing on your clipboard, for a browser
-    hop start                    open a new session with one already in it
-    hop sources                  check everything is hooked up
+    hop ls                       see the sessions on this machine
+    hop pack                     pack one into a hop you can attach anywhere
+    hop copy                     put a hop's reference on your clipboard
+    hop copy --full              put the whole hop on your clipboard, for a browser
+    hop to                       send a hop to another agent — it asks which
+    hop source                   which apps are linked
 
 usage: hop <command> [flags]
 

@@ -24,13 +24,17 @@ before removing the binary.
 The document is the thing. Everything else points at it.
 
 ```
-hop file              write one out, print the path
-hop file --reveal     and show it in Finder, ready to drag into an app
-hop copy              put a short reference on your clipboard
-hop copy --full       put the whole thing on your clipboard, for a browser tab
-hop start             open a new session with one already in it
-hop sources           check everything is hooked up
+hop pack              pack a session into a hop, print the path
+hop pack --reveal     and show it in Finder, ready to drag into an app
+hop copy              put a hop's reference on your clipboard
+hop copy --full       put the whole hop on your clipboard, for a browser tab
+hop to                send a hop to another agent — it asks which
+hop source            which apps are linked
 ```
+
+`hop to` asks where, rather than expecting you to remember that the app you
+installed is called `codex` on this machine. It lists what can actually be opened,
+by the name each one goes by, and marks the ones that are not installed.
 
 All of them take a session on the command line, and all of them ask when you leave
 it out. The chooser runs on the alternate screen, so it leaves nothing in your
@@ -42,7 +46,7 @@ Three ways to hand a document over, in order of how little context they cost:
 
 | | costs | for |
 |---|---|---|
-| `hop file` | nothing until it is read | attaching, or dragging into a chat |
+| `hop pack` | nothing until it is read | attaching, or dragging into a chat |
 | `hop copy` | about 250 bytes | any agent that can read a path |
 | `hop copy --full` | the whole conversation | a browser tab, which cannot read your disk |
 
@@ -66,10 +70,13 @@ batch share their first twenty-four characters — no prefix short enough to typ
 told them apart. It hashes the identifier and not the path, so archiving a session
 by moving its file does not change it.
 
-## What an agent gets
+## What a hop looks like
+
+A packed conversation is called a hop — the same word as the command and the
+software, so "send me that hop" is a sentence.
 
 ```
-═══ GRASSHOPPER BUNDLE · GH-K3QZ ══════════════════════════
+═══ GRASSHOPPER HOP · HOP-K3QZ ══════════════════════════
 Source     claude-code · "Billing resolver"
 Captured   2026-08-26 16:12 CEST
 Directory  /Users/you/code/api (main)
@@ -102,7 +109,7 @@ transcript: the original stays where its own agent put it.
 
 ## What it reads today
 
-`hop sources` answers this for your machine, by front end rather than by vendor —
+`hop source` answers this for your machine, by front end rather than by vendor —
 you installed apps, not registry keys:
 
 ```
@@ -114,7 +121,7 @@ Claude Code, terminal  1         7h ago     linked
 Claude on a phone      1         6d ago     linked
 ```
 
-All of it read from files the agents already write. `hop sources --repair` fixes a
+All of it read from files the agents already write. `hop source --repair` fixes a
 glob whose files have moved.
 
 Sessions that run in the cloud rather than on the machine leave no transcript

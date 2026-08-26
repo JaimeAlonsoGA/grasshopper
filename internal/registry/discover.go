@@ -2,6 +2,7 @@ package registry
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -14,6 +15,15 @@ func Transcripts(a Agent) []string {
 	return matches(a.Transcripts, func(paths []string) {
 		sort.Slice(paths, func(i, j int) bool { return modTime(paths[i]).Before(modTime(paths[j])) })
 	})
+}
+
+// OnPath reports whether an agent's launch command can actually be run.
+func OnPath(launch string) bool {
+	if launch == "" {
+		return false
+	}
+	_, err := exec.LookPath(launch)
+	return err == nil
 }
 
 // Index is the file naming an agent's sessions, when it keeps one.

@@ -9,14 +9,14 @@ import (
 	"grasshopper/internal/store"
 )
 
-// runFile writes the document and hands you the path.
+// runPack writes a hop and hands you the path.
 //
 // This is the artefact, and the other commands are ways of pointing at it. An
 // agent that takes attachments takes this file; one that reads paths reads this
-// path; a browser tab gets its contents pasted. Writing it is the thing that
-// always happens, and everything else is a reference.
-func runFile(args []string) error {
-	fs := flags("file", "[session]")
+// path; a browser tab gets its contents pasted. Packing is the thing that always
+// happens, and everything else is a reference to what was packed.
+func runPack(args []string) error {
+	fs := flags("pack", "[session]")
 	reveal := fs.Bool("reveal", false, "show it in the file manager, ready to drag into an app")
 	rest, err := parse(fs, args)
 	if err != nil {

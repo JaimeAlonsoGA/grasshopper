@@ -26,6 +26,10 @@ import (
 // block asks it to write its own handoff — which is why the tool ships one
 // reader and still works with everything.
 type Agent struct {
+	// Name is what to call this agent to a person. The key is for typing; this is
+	// for reading.
+	Name string `json:"name,omitempty"`
+
 	// Transcripts is one glob, or several separated by commas. Several, because an
 	// agent may keep its sessions in more than one place — one directory for the
 	// current ones and another for the archived — and no single glob spans them.
@@ -60,6 +64,7 @@ func Default() Registry {
 		// One entry covers a terminal, a desktop app and an editor extension:
 		// they are the same program underneath and they all write here.
 		"claude-code": {
+			Name:        "Claude Code",
 			Transcripts: "~/.claude/projects/*/*.jsonl",
 			Normalize:   "jsonl-tree",
 			Launch:      "claude",
@@ -71,6 +76,7 @@ func Default() Registry {
 			},
 		},
 		"codex": {
+			Name:        "Codex",
 			Transcripts: "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
 			Normalize:   "jsonl-events",
 			Index:       "~/.codex/session_index.jsonl",
@@ -145,6 +151,9 @@ func merge(r Registry) Registry {
 		if len(theirs.Surfaces) == 0 {
 			theirs.Surfaces = shipped.Surfaces
 		}
+		if theirs.Name == "" {
+			theirs.Name = shipped.Name
+		}
 		r[key] = theirs
 	}
 	return r
@@ -174,6 +183,15 @@ func (r Registry) Get(key string) (Agent, error) {
 		return Agent{}, fmt.Errorf("unknown agent %q (registry has: %s)", key, strings.Join(r.Keys(), ", "))
 	}
 	return a, nil
+}
+
+// Called is what to show a person for an agent. The key is a thing to type, not
+// a thing to read.
+func (r Registry) Called(key string) string {
+	if name := r[key].Name; name != "" {
+		return name
+	}
+	return key
 }
 
 // Surface names one of an agent's front ends. An unrecognised value is returned

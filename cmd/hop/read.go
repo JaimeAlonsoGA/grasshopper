@@ -84,7 +84,7 @@ func runDoctor(args []string) error {
 	fmt.Printf("Bundles are capped at %d bytes of conversation; the original is always linked.\n", bundle.Cap)
 	for _, s := range statuses {
 		if s.Stale() {
-			fmt.Print("Something has moved — run hop sources.\n")
+			fmt.Print("Something has moved — run hop source.\n")
 			break
 		}
 	}

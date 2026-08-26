@@ -384,7 +384,10 @@ func listHeight() int {
 // works down a pipe.
 func numbered(title string, header []string, rows []Row, in io.Reader, out io.Writer) (int, error) {
 	widths := columns(append([][]string{header}, cells(rows)...))
-	fmt.Fprintf(out, "%s\n   %s\n", title, row(header, widths))
+	fmt.Fprintln(out, title)
+	if len(header) > 0 {
+		fmt.Fprintf(out, "   %s\n", row(header, widths))
+	}
 	for i, r := range rows {
 		fmt.Fprintf(out, "%2d %s\n", i+1, row(r.Cells, widths))
 	}

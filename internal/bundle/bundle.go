@@ -1,6 +1,10 @@
 // Package bundle is the domain: what a transported conversation is, what
 // survives the trip, and the document another agent reads.
 //
+// The thing it produces is called a hop — the same word as the command and the
+// software, the way Docker calls its artefact an image. "Send me that hop" is a
+// sentence somebody says out loud, which is the test a name has to pass.
+//
 // Nothing here touches the world. No os, no filesystem, no exec, no clock. The
 // rendered bundle is the only surface of this product anyone actually reads, so
 // it is worth being a pure function of its inputs. Everything that needs the
@@ -149,7 +153,7 @@ func Code(turns []Turn) string {
 		h.Write([]byte{0})
 	}
 	sum := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(h.Sum(nil))
-	return "GH-" + sum[:4]
+	return "HOP-" + sum[:4]
 }
 
 // normalize collapses runs of blank lines and strips trailing spaces, while

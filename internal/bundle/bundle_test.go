@@ -110,7 +110,8 @@ func TestCodeIsDeterministicAndUnambiguous(t *testing.T) {
 	if Code([]Turn{{Me, "ab"}}) == Code([]Turn{{Me, "a"}, {Me, "b"}}) {
 		t.Error("collided across a turn boundary")
 	}
-	if !strings.HasPrefix(Code(a), "GH-") || len(Code(a)) != 7 {
+	// The artefact is a hop, and its code says so.
+	if !strings.HasPrefix(Code(a), "HOP-") || len(Code(a)) != 8 {
 		t.Errorf("Code = %q", Code(a))
 	}
 }
@@ -124,7 +125,7 @@ func TestRenderIsFramedAndSafe(t *testing.T) {
 
 	got := Render(b)
 	for _, want := range []string{
-		"GRASSHOPPER BUNDLE · " + b.Code,
+		"GRASSHOPPER HOP · " + b.Code,
 		`Source     an-agent · "Billing resolver"`,
 		"Captured   2026-08-26 16:12 UTC",
 		"Directory  /w/api (main)",
