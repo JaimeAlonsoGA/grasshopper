@@ -1,3 +1,4 @@
 /hop
 /dist/
 .DS_Store
+/site/install.sh

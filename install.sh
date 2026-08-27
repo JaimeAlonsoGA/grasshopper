@@ -1,7 +1,12 @@
 #!/bin/sh
 # grasshopper — install and set up in one command.
 #
-#   curl -fsSL https://raw.githubusercontent.com/JaimeAlonsoGA/grasshopper/main/install.sh | sh
+#   curl -fsSL https://hopcli.dev/install.sh | sh
+#
+# The scheme is written out on purpose. .dev is HSTS-preloaded, but curl does not
+# consult the preload list: without https:// the first request goes out in
+# plaintext and the redirect it follows is attacker-controllable. For a URL whose
+# body is piped into a shell, that is the entire threat model.
 #
 # Downloads the binary for this machine, puts it on PATH, and registers it with
 # every agent it can find. No Go, no Homebrew, no tap. POSIX sh on purpose: this
@@ -41,6 +46,32 @@ trap 'rm -rf "$tmp"' EXIT
 
 say "downloading grasshopper $tag for $os/$arch"
 curl -fsSL "$url" -o "$tmp/hop.tar.gz" || die "could not download $url"
+
+# Every release publishes checksums. This script is piped into a shell, so the one
+# thing worth spending ten lines on is checking that what arrived is what was
+# published. A missing checksums file is a warning rather than a wall: an old
+# release should still install.
+sums="https://github.com/$OWNER/$REPO/releases/download/$tag/checksums.txt"
+if curl -fsSL "$sums" -o "$tmp/checksums.txt" 2>/dev/null; then
+  name="grasshopper-$tag-$os-$arch.tar.gz"
+  want=$(awk -v n="$name" '$2 == n || $2 == "*"n { print $1 }' "$tmp/checksums.txt" | head -1)
+  if [ -n "$want" ]; then
+    if command -v shasum >/dev/null 2>&1; then
+      got=$(shasum -a 256 "$tmp/hop.tar.gz" | cut -d" " -f1)
+    elif command -v sha256sum >/dev/null 2>&1; then
+      got=$(sha256sum "$tmp/hop.tar.gz" | cut -d" " -f1)
+    fi
+    if [ -n "${got:-}" ] && [ "$got" != "$want" ]; then
+      die "checksum mismatch for $name — refusing to install
+  published $want
+  received  $got"
+    fi
+    [ -n "${got:-}" ] && say "checksum verified"
+  fi
+else
+  say "note: no checksums published for $tag — installing unverified"
+fi
+
 tar -xzf "$tmp/hop.tar.gz" -C "$tmp"
 [ -f "$tmp/hop" ] || die "the archive did not contain hop"
 

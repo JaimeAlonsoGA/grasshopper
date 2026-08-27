@@ -1,0 +1,45 @@
+name: installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # The served copy can drift without anybody touching this repository — a
+    # deploy that failed, a rewrite rule added later — so it is checked on a
+    # timer rather than only on a push.
+    - cron: "0 7 * * 1"
+
+jobs:
+  served:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: the site's copy is the repo's copy
+        run: |
+          set -eu
+          url=https://hopcli.dev/install.sh
+
+          # Until the domain is pointed at the site there is nothing to compare,
+          # and a check that fails for that reason teaches people to ignore it.
+          if ! curl -fsS --max-time 15 -o served.sh "$url"; then
+            echo "::notice::$url is not being served yet — nothing to compare"
+            exit 0
+          fi
+
+          # A framework catch-all returns 200 with an HTML document, which curl -f
+          # does not catch. Piping that into sh is the failure this check exists
+          # for, so the content type is asserted, not assumed.
+          type=$(curl -fsSI --max-time 15 "$url" | tr -d '\r' \
+                 | awk -F': ' 'tolower($1)=="content-type"{print tolower($2)}')
+          case "$type" in
+            text/plain*) ;;
+            *) echo "::error::$url is served as '$type', not text/plain — a catch-all is probably eating it"; exit 1 ;;
+          esac
+
+          if ! diff -u install.sh served.sh; then
+            echo "::error::the installer served at $url is not the one in this repository"
+            exit 1
+          fi
+          echo "served installer matches the repository"

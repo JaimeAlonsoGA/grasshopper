@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>grasshopper</title>
+<meta name="description" content="Carry a conversation from one AI agent to another. Local only.">
+<style>
+  :root { color-scheme: light dark; --ink: #16181d; --ground: #fbfaf8; --muted: #6b7280; --rule: #e3e1dc; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #e8e6e1; --ground: #14161a; --muted: #8b919c; --rule: #2a2d34; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 16px/1.6 ui-sans-serif, -apple-system, "Helvetica Neue", sans-serif;
+    display: grid; place-items: center; min-height: 100vh; padding: 2rem;
+  }
+  main { max-width: 34rem; }
+  h1 { font-size: 1.6rem; letter-spacing: -0.02em; margin: 0 0 0.6rem; font-weight: 600; }
+  h1 span { font-weight: 400; color: var(--muted); }
+  p { margin: 0 0 1.4rem; color: var(--muted); }
+  pre {
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 0.85rem 1rem; overflow-x: auto; margin: 0 0 1.4rem;
+    font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  a { color: inherit; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+  footer { font-size: 0.9rem; color: var(--muted); }
+</style>
+<main>
+  <h1>🦗 grasshopper <span>— carry a conversation from one AI agent to another</span></h1>
+  <p>Local only. No network, no model calls, no account. It reads the sessions your
+     agents already write to disk and hands one over.</p>
+  <pre>curl -fsSL https://hopcli.dev/install.sh | sh</pre>
+  <footer><a href="https://github.com/JaimeAlonsoGA/grasshopper">github.com/JaimeAlonsoGA/grasshopper</a></footer>
+</main>

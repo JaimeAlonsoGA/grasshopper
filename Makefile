@@ -10,13 +10,14 @@ LDFLAGS  = -s -w -X main.version=$(VERSION)
 PLATFORMS = darwin/arm64 darwin/amd64 linux/arm64 linux/amd64
 SHA256 := $(shell command -v shasum >/dev/null 2>&1 && echo "shasum -a 256" || echo sha256sum)
 
-.PHONY: help build version-check install uninstall check release clean
+.PHONY: help build version-check install uninstall check release site clean
 
 help:
 	@echo "make install     build, put hop on PATH ($(PREFIX)), register it with your agents"
 	@echo "make uninstall   unregister, then remove the binary"
 	@echo "make check       gofmt, vet, tests"
 	@echo "make release     cross-compiled binaries in dist/"
+	@echo "make site        assemble the static site, installer included"
 	@echo ""
 	@echo "grasshopper $(VERSION)"
 
@@ -67,5 +68,12 @@ release: check
 	@cd dist && $(SHA256) *.tar.gz > checksums.txt
 	@ls -l dist
 
+# The installer is copied here, never written here. A second copy of a file that
+# people pipe into a shell is a second thing that can drift, and the drifted one
+# fails silently.
+site: install.sh
+	@cp install.sh site/install.sh
+	@echo "site/ assembled ($(shell wc -c < install.sh | tr -d ' ') bytes of installer)"
+
 clean:
-	@rm -rf hop dist
+	@rm -rf hop dist site/install.sh
