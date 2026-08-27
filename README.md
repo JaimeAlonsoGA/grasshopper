@@ -1,5 +1,7 @@
 # grasshopper
 
+**[hopcli.dev](https://hopcli.dev)**
+
 Carry a conversation from one AI agent to another. Local only — no network, no
 model calls, no account.
 
@@ -14,7 +16,7 @@ conversation is **a hop**.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/JaimeAlonsoGA/grasshopper/main/install.sh | sh
+curl -fsSL https://hopcli.dev/install.sh | sh
 ```
 
 That downloads the binary for your machine, puts it in `~/.local/bin`, and runs
@@ -37,6 +39,8 @@ read, and shows you the two ways to use it. Nothing else to do.
         Claude Code, desktop app   7
         …and 4 more
 ```
+
+It verifies the download against the checksums published with every release.
 
 From a clone: `make install`. Run `hop hatch` again any time — it repairs the
 wiring rather than duplicating it. To remove it: `hop uninstall` unregisters
