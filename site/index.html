@@ -15,6 +15,7 @@
 <link rel="icon" href="/assets/favicon-512.png" type="image/png" sizes="512x512">
 <link rel="apple-touch-icon" href="/assets/favicon-180.png">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="en">
 <meta property="og:site_name" content="grasshopper">
 <meta property="og:url" content="https://hopcli.dev/">
 <meta property="og:title" content="grasshopper — move a session between agents">
@@ -28,6 +29,7 @@
 <meta name="twitter:title" content="grasshopper — move a session between agents">
 <meta name="twitter:description" content="Carry a conversation from one AI agent to another. Local only: no network, no model calls, no account.">
 <meta name="twitter:image" content="https://hopcli.dev/assets/og-card.jpg">
+<meta name="twitter:image:alt" content="grasshopper — move a session between agents. curl -fsSL https://hopcli.dev/install.sh | sh">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="/assets/hopper.jpg" fetchpriority="high">
@@ -105,13 +107,16 @@
   .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-low); font-weight: 400; margin: 0 0 20px; }
   .note { font-family: var(--mono); font-size: 12px; color: var(--ink-dim); margin: 16px 0 0; }
 
-  .agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
-  .agent { display: grid; justify-items: center; gap: 14px; background: var(--panel); border-radius: 14px; padding: 26px 18px 22px; text-align: center; }
-  .agent img { width: 96px; height: 96px; border-radius: 18px; }
+  .agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 14px; }
+  .agent { display: grid; justify-items: center; align-content: start; gap: 14px; background: var(--panel); border-radius: 14px; padding: 30px 18px 26px; text-align: center; }
+  .agent img { width: 112px; height: 112px; border-radius: 18px; }
   .agent b { font-size: 15px; font-weight: 500; color: oklch(0.88 0.02 88); }
-  .agent span { font-family: var(--mono); font-size: 11.5px; line-height: 1.6; color: var(--ink-dim); }
-  .agent.open { background: var(--sunk); border: 1px dashed oklch(0.4 0.04 82); align-content: center; gap: 10px; }
-  .agent.open .glyph { font-family: var(--mono); font-size: 30px; color: oklch(0.6 0.08 82); line-height: 1; }
+  .agent span { font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--ink-dim); }
+  .agent .badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.7 0.1 145); }
+  .agent.open { background: var(--sunk); border: 1px dashed oklch(0.4 0.04 82); align-content: space-between; }
+  .agent.open .marks { display: grid; grid-template-columns: repeat(2, 52px); gap: 8px; width: 112px; height: 112px; justify-content: center; align-content: center; }
+  .agent.open .marks img { width: 52px; height: 52px; border-radius: 10px; opacity: 0.85; }
+  .agent.open b { color: oklch(0.82 0.02 88); }
 
   .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
   .step { border-radius: 14px; padding: 26px 24px 28px; }
@@ -255,22 +260,29 @@
     <h2 class="eyebrow">Move your sessions from</h2>
     <div class="agents">
       <div class="agent">
-        <img src="/assets/agent-claude-code.webp" width="96" height="96" alt="" loading="lazy">
+        <img src="/assets/agent-claude-code.webp" width="112" height="112" alt="" loading="lazy">
         <b>Claude Code</b>
         <span>terminal · VS&nbsp;Code<br>desktop app · phone</span>
+        <span class="badge">linked on install</span>
       </div>
       <div class="agent">
-        <img src="/assets/agent-codex.webp" width="96" height="96" alt="" loading="lazy">
+        <img src="/assets/agent-codex.webp" width="112" height="112" alt="" loading="lazy">
         <b>Codex</b>
         <span>ChatGPT app · terminal<br>VS&nbsp;Code</span>
+        <span class="badge">linked on install</span>
       </div>
       <div class="agent open">
-        <div class="glyph">{ }</div>
-        <b>And yours</b>
-        <span>one JSON entry in<br>registry.json</span>
+        <div class="marks">
+          <img src="/assets/more-1.webp" width="52" height="52" alt="" loading="lazy">
+          <img src="/assets/more-2.webp" width="52" height="52" alt="" loading="lazy">
+          <img src="/assets/more-3.webp" width="52" height="52" alt="" loading="lazy">
+          <img src="/assets/more-4.webp" width="52" height="52" alt="" loading="lazy">
+        </div>
+        <b>And many more</b>
+        <span>a glob and a format<br>in registry.json</span>
       </div>
     </div>
-    <p class="note">Every agent that writes its sessions to disk. Not browser tabs, not cloud sessions — those leave nothing behind.</p>
+    <p class="note">Any agent that writes its sessions to disk as JSONL. Adding one is two lines of config, no code — browser tabs and cloud sessions leave nothing behind, so those it cannot read at all.</p>
   </section>
 
   <section>
