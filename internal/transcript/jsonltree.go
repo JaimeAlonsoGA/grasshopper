@@ -1,7 +1,6 @@
 package transcript
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -144,21 +143,6 @@ func plainText(raw json.RawMessage) string {
 // everything before the damage. Lines are read without a size cap: a single
 // pasted file in a transcript can run to megabytes.
 func readRecords(r io.Reader) (records []record, lines int, err error) {
-	br := bufio.NewReaderSize(r, 1<<16)
-	for {
-		line, readErr := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var rec record
-			if json.Unmarshal([]byte(trimmed), &rec) == nil {
-				lines++
-				records = append(records, rec)
-			}
-		}
-		if readErr != nil {
-			if readErr == io.EOF {
-				return records, lines, nil
-			}
-			return nil, 0, readErr
-		}
-	}
+	lines = eachJSON(r, false, func(rec record) { records = append(records, rec) })
+	return records, lines, nil
 }

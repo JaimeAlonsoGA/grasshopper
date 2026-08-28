@@ -23,13 +23,7 @@ func JSONLGrok(r io.ReadSeeker) ([]bundle.Turn, error) {
 	}
 
 	var turns []bundle.Turn
-	lines := 0
-	eachLine(r, false, func(raw []byte) {
-		var m grokMessage
-		if json.Unmarshal(raw, &m) != nil {
-			return
-		}
-		lines++
+	lines := eachJSON(r, false, func(m grokMessage) {
 		if turn, ok := m.turn(); ok {
 			turns = append(turns, turn)
 		}
@@ -122,12 +116,8 @@ func peekGrok(r io.ReadSeeker) (Preview, error) {
 		return Preview{}, err
 	}
 	var preview Preview
-	eachLine(io.LimitReader(r, peekBytes), false, func(raw []byte) {
+	eachJSON(io.LimitReader(r, peekBytes), false, func(m grokMessage) {
 		if preview.Opening != "" {
-			return
-		}
-		var m grokMessage
-		if json.Unmarshal(raw, &m) != nil {
 			return
 		}
 		if turn, ok := m.turn(); ok && turn.Who == bundle.Me {

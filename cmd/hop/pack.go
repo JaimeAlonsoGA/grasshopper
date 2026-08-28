@@ -19,21 +19,13 @@ import (
 // getting whatever was on the clipboard before — which is exactly what happened.
 func runPack(args []string) error {
 	fs := flags("pack", "[session]")
-	// --text is the name for what this does: the words instead of the file. --full
-	// said how much rather than what shape, which is the axis nobody was choosing
-	// on, and it shipped — so it still works and is not advertised twice.
-	asText := fs.Bool("text", false, "put the whole conversation on the clipboard as text, for somewhere that cannot read a file")
-	full := fs.Bool("full", false, "")
+	asText := fs.Bool("text", false, "put the conversation itself on the clipboard, for somewhere that cannot read a file")
 	last := fs.Int("last", 0, "carry only the last N messages, plus what was first asked for")
-	attach := fs.Bool("attach", false, "")
 	reveal := fs.Bool("reveal", false, "show it in the file manager, ready to drag into an app")
 	rest, err := parse(fs, args)
 	if err != nil {
 		return err
 	}
-	*asText = *asText || *full
-	_ = attach // the file is the default; the flag survives so a learned command keeps working
-
 	session, err := choose(rest, "pack which session?")
 	if err != nil {
 		return err
@@ -48,7 +40,7 @@ func runPack(args []string) error {
 	}
 
 	// A reference by default: pasting a whole conversation spends the context the
-	// handover was meant to save. --full is for a browser tab, which cannot read a
+	// handover was meant to save. --text is for a browser tab, which cannot read a
 	// file on this machine.
 	text := bundle.Pointer(b, path)
 	if *asText {

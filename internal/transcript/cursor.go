@@ -1,15 +1,11 @@
 package transcript
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"grasshopper/internal/bundle"
-
-	_ "modernc.org/sqlite"
 )
 
 // cursorDB reads the editor that keeps every conversation in one key-value table.
@@ -134,26 +130,4 @@ type bubble struct {
 	Type           int    `json:"type"`
 	Text           string `json:"text"`
 	SubagentTaskID string `json:"subagentSpawnTaskToolCallId"`
-}
-
-// openRead opens somebody else's database without touching it.
-//
-// Read-only and immutable are not the same promise and both are wanted here.
-// Read-only says grasshopper will not write; immutable says it will not create
-// the journal files a reader otherwise leaves beside a database — which would be
-// grasshopper writing into another app's state through the back door, and would
-// also fail outright when the app holds the lock.
-func openRead(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro&immutable=1&_pragma=query_only(1)")
-	if err != nil {
-		return nil, err
-	}
-	db.SetMaxOpenConns(1)
-	ctx, cancel := contextWithTimeout(5 * time.Second)
-	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		db.Close()
-		return nil, err
-	}
-	return db, nil
 }

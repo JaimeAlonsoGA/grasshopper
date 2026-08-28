@@ -23,8 +23,12 @@ func tools() []mcp.Tool {
 				"gave itself, its working directory, and whether it was written to recently. " +
 				"Use it to find the session a person is referring to before loading it.",
 			Schema: object(map[string]any{
-				"limit":  field("integer", "How many to return. Default 25."),
+				"limit":  field("integer", "How many to return, newest first. Default 25."),
 				"active": field("boolean", "Only sessions written to in the last few minutes."),
+				"match": field("string", "Narrow to sessions whose title, id, agent or app contains "+
+					"this. Use it rather than a large limit when somebody names what they are after — "+
+					"a machine with hundreds of sessions answers the question in one call instead of "+
+					"returning a list to be read."),
 			}),
 			Call: listTool,
 		},
@@ -47,17 +51,21 @@ func tools() []mcp.Tool {
 	}
 }
 
-func listTool(raw json.RawMessage) (string, error) {
+func listing(raw json.RawMessage) (string, error) {
 	var args struct {
-		Limit  int  `json:"limit"`
-		Active bool `json:"active"`
+		Limit  int    `json:"limit"`
+		Active bool   `json:"active"`
+		Match  string `json:"match"`
 	}
 	if len(raw) > 0 {
 		if err := json.Unmarshal(raw, &args); err != nil {
 			return "", fmt.Errorf("unreadable arguments: %w", err)
 		}
 	}
-	if args.Limit <= 0 {
+	// Zero is "no preference", which is a listing an agent will read into its
+	// context, so it is capped. Negative is "all of them", which only somebody
+	// at a terminal asks for.
+	if args.Limit == 0 {
 		args.Limit = 25
 	}
 
@@ -65,6 +73,12 @@ func listTool(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if args.Active {
+		all = onlyActive(all)
+	}
+	// Narrowing before counting, so the tally at the bottom answers "how many
+	// are there like this" rather than "how many are there".
+	all = sessions.Matching(all, args.Match)
 
 	// Title second and bounded, so the columns after it line up. The directory is
 	// not here: it is in the hop's own header, where somebody reading a
@@ -73,23 +87,59 @@ func listTool(raw json.RawMessage) (string, error) {
 	rows := [][]string{{"ID", "SESSION", "FROM", "WHEN"}}
 	shown := 0
 	for _, s := range all {
-		if args.Active && !s.Active {
-			continue
-		}
-		if shown >= args.Limit {
+		if args.Limit > 0 && shown >= args.Limit {
 			break
 		}
 		shown++
 		rows = append(rows, []string{s.ID, truncate(s.Label(), titleWidth), surface(s), ago(s.When)})
 	}
 	if shown == 0 {
+		if args.Match != "" {
+			return fmt.Sprintf("No session matches %q. Ask again without it to see them all.", args.Match), nil
+		}
 		return "No sessions found. hop doctor shows where grasshopper is looking.", nil
 	}
 
 	var out strings.Builder
 	writeTable(&out, rows)
-	fmt.Fprintf(&out, "\n%d of %d sessions. Load one with load_session.\n", shown, len(all))
+	fmt.Fprintf(&out, "\n%s\n", tally(shown, len(all), args.Match))
 	return out.String(), nil
+}
+
+// listTool is the listing as an agent reads it, which ends by naming the tool
+// that acts on a row. The terminal ends by naming a command instead — same
+// listing, different next step, and neither audience is shown the other's.
+func listTool(raw json.RawMessage) (string, error) {
+	text, err := listing(raw)
+	if err != nil || strings.HasPrefix(text, "No session") {
+		return text, err
+	}
+	return text + "Load one with load_session.\n", nil
+}
+
+// tally says how much of the answer is on screen, and never implies there is no
+// more when there is.
+func tally(shown, total int, match string) string {
+	switch {
+	case shown >= total && match != "":
+		return fmt.Sprintf("%d sessions matching %q.", total, match)
+	case shown >= total:
+		return fmt.Sprintf("%d sessions.", total)
+	case match != "":
+		return fmt.Sprintf("%d of %d matching %q, newest first.", shown, total, match)
+	default:
+		return fmt.Sprintf("%d of %d sessions, newest first.", shown, total)
+	}
+}
+
+func onlyActive(all []sessions.Session) []sessions.Session {
+	var out []sessions.Session
+	for _, s := range all {
+		if s.Active {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func loadTool(raw json.RawMessage) (string, error) {

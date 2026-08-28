@@ -59,12 +59,18 @@ No command, no paste. The hop carries a short code, so when the agent mentions
 ## Or do it yourself
 
 ```
-hop ls                see the sessions on this machine
+hop ls                see the sessions on this machine, newest first
+hop ls billing        only the ones that match
+hop ls --all          every one of them
 hop pack              pack one — the file and a reference land on your clipboard
-hop pack --last 5     only the last five messages
-hop pack --text       the whole conversation on the clipboard, for a browser tab
+hop pack --last 5     only the last five messages, plus the objective
+hop pack --text       the conversation itself, for somewhere that reads neither
 hop to                open one in a command-line agent — it asks which
+hop show              print a session as a bundle
 hop source            which apps are linked
+hop hatch             set it up, or repair the wiring
+hop doctor            where it is looking, what it found, and which agents know it
+hop uninstall         unregister everywhere
 ```
 
 `--last N` works on `pack`, `to` and `show`, and agents can ask for it too. It

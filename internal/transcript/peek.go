@@ -1,8 +1,6 @@
 package transcript
 
 import (
-	"bufio"
-	"encoding/json"
 	"errors"
 	"io"
 	"strings"
@@ -77,7 +75,7 @@ func peekJSONLTree(r io.ReadSeeker) (Preview, error) {
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return Preview{}, err
 	}
-	scan(io.LimitReader(r, peekBytes), false, func(rec headRecord) {
+	eachJSON(io.LimitReader(r, peekBytes), false, func(rec headRecord) {
 		seen = append(seen, rec.Dir)
 		// A title the person typed beats one the agent generated, and a later
 		// title beats an earlier one: both get revised as a session finds its
@@ -102,7 +100,7 @@ func peekJSONLTree(r io.ReadSeeker) (Preview, error) {
 		if _, err := r.Seek(size-peekBytes, io.SeekStart); err != nil {
 			return Preview{}, err
 		}
-		scan(r, true, func(rec headRecord) { seen = append(seen, rec.Dir) })
+		eachJSON(r, true, func(rec headRecord) { seen = append(seen, rec.Dir) })
 	}
 
 	preview.Dirs = mostRecentFirst(seen)
@@ -117,29 +115,6 @@ type headRecord struct {
 	CustomTitle string `json:"customTitle"`
 	AITitle     string `json:"aiTitle"`
 	Entrypoint  string `json:"entrypoint"`
-}
-
-// scan walks JSON lines, dropping the first when the read began mid-file and so
-// began mid-line.
-func scan(r io.Reader, partialFirstLine bool, each func(headRecord)) {
-	br := bufio.NewReaderSize(r, 1<<16)
-	if partialFirstLine {
-		if _, err := br.ReadString('\n'); err != nil {
-			return
-		}
-	}
-	for {
-		line, err := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var rec headRecord
-			if json.Unmarshal([]byte(trimmed), &rec) == nil {
-				each(rec)
-			}
-		}
-		if err != nil {
-			return
-		}
-	}
 }
 
 // mostRecentFirst reverses and deduplicates, so the caller offers the latest

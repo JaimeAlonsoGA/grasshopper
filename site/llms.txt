@@ -18,7 +18,7 @@ Downloads the binary, puts it in ~/.local/bin, and runs `hop hatch`, which regis
 
 It exposes two tools:
 
-- `list_sessions` — every AI conversation on this machine, newest first, with the title each session gave itself, its working directory, and whether it was written to recently. Arguments: `limit` (integer, default 25), `active` (boolean, only sessions written to in the last few minutes).
+- `list_sessions` — every AI conversation on this machine, newest first, with the title each session gave itself, its working directory, and whether it was written to recently. Arguments: `limit` (integer, default 25), `active` (boolean, only sessions written to in the last few minutes), `match` (string, narrows to sessions whose title, id, agent or app contains it — use this rather than a large limit when somebody names what they are after).
 - `load_session` — one conversation into the current context, returned as reference material, with the path to the untouched original. Arguments: `session` (string, required) — an id, a title fragment, or a path; `last` (integer, optional) — carry only the last N messages, plus the first thing the person asked.
 
 Because of those two tools an agent can answer a plain request with no command and no paste. Ask any agent, in any session: "bring me the thread where I worked on billing". It reaches grasshopper over MCP, finds the session by its own title, and reads it. Each hop carries a code such as HOP-K3QZ, so you can tell it really read it.
@@ -30,7 +30,7 @@ A hop is one packed conversation: a bounded text block whose header names the so
 ## Commands
 
 - `hop hatch` — set it up; re-runnable, repairs rather than duplicates
-- `hop ls` — the sessions on this machine
+- `hop ls` — the sessions on this machine, twenty at a time; `hop ls <word>` narrows, `hop ls --all` shows every one
 - `hop pack` — pack one; the file and a short reference to it land on the clipboard together
 - `hop pack --last 5` — only the last five messages, plus the objective the thread opened with
 - `hop pack --text` — the conversation itself on the clipboard, for a browser tab or anywhere that reads neither a file nor a path

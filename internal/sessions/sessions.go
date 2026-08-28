@@ -229,6 +229,34 @@ func identifier(path string) string {
 	return name
 }
 
+// Matching narrows a list to the sessions a word could mean.
+//
+// One definition of "matches", used by the search on a listing, by the filter in
+// the chooser, and by resolving a name on the command line. Three subtly
+// different answers to "does this session match" is how somebody comes to see a
+// session in a list and be told it does not exist when they ask for it.
+func Matching(all []Session, needle string) []Session {
+	needle = strings.ToLower(strings.TrimSpace(needle))
+	if needle == "" {
+		return all
+	}
+	var matched []Session
+	for _, s := range all {
+		switch {
+		// The handle from the listing, the underlying identifier for anyone who
+		// has it, or a fragment of what they would recognise it by: its title,
+		// or the app it came from.
+		case s.ID == needle,
+			strings.HasPrefix(strings.ToLower(identifier(s.source())), needle),
+			strings.Contains(strings.ToLower(s.Label()), needle),
+			strings.Contains(strings.ToLower(s.Agent), needle),
+			strings.Contains(strings.ToLower(s.Surface), needle):
+			matched = append(matched, s)
+		}
+	}
+	return matched
+}
+
 // Find resolves what somebody typed: a full path, an id, the first characters of
 // one, or a fragment of the title. An ambiguous answer is an error rather than a
 // guess, because loading the wrong conversation is the one mistake this package
@@ -253,17 +281,7 @@ func Find(want string) (Session, error) {
 	if needle == "" {
 		return Session{}, fmt.Errorf("name a session")
 	}
-	var matched []Session
-	for _, s := range all {
-		switch {
-		// The handle from the listing, the underlying identifier for anyone who
-		// has it, or a fragment of the title for anyone who does not.
-		case s.ID == needle,
-			strings.HasPrefix(strings.ToLower(identifier(s.Path)), needle),
-			strings.Contains(strings.ToLower(s.Label()), needle):
-			matched = append(matched, s)
-		}
-	}
+	matched := Matching(all, needle)
 	switch len(matched) {
 	case 0:
 		return Session{}, fmt.Errorf("no session matching %q", want)

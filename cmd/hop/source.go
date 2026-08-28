@@ -29,6 +29,10 @@ func runSource(args []string) error {
 	if err != nil {
 		return err
 	}
+	reg, err := registry.Load()
+	if err != nil {
+		return err
+	}
 	all, err := sessions.List()
 	if err != nil {
 		return err
@@ -56,15 +60,21 @@ func runSource(args []string) error {
 	}
 
 	// An agent whose glob has been overtaken is a problem and gets a row. One
-	// that is simply not configured is not a source at all — listing it beside
-	// apps somebody actually has is how a report becomes noise.
-	var notes, unconfigured []string
+	// that was never installed is not a source at all — listing it beside apps
+	// somebody actually has is how a report becomes noise, and it is the
+	// difference between "your setup has a hole in it" and "software exists that
+	// you do not run".
+	var notes, unconfigured, absent []string
 	for _, s := range statuses {
 		if perAgent[s.Key] > 0 && !s.Stale() {
 			continue
 		}
 		if s.Agent.Transcripts == "" {
 			unconfigured = append(unconfigured, s.Key)
+			continue
+		}
+		if s.StateDir == "" {
+			absent = append(absent, reg.Called(s.Key))
 			continue
 		}
 		verdict, note := verdictFor(s, perAgent[s.Key])
@@ -93,6 +103,10 @@ func runSource(args []string) error {
 	if len(unconfigured) > 0 {
 		fmt.Printf("\nIn your registry but not set up: %s.\n", strings.Join(unconfigured, ", "))
 	}
+	if len(absent) > 0 {
+		sort.Strings(absent)
+		fmt.Printf("\nAlso reads %s, which this machine does not have.\n", englishList(absent))
+	}
 	if !stale && len(notes) == 0 {
 		fmt.Printf("Anything else is added by editing %s — a glob and a format, no code.\n", registry.Path())
 	}
@@ -100,6 +114,19 @@ func runSource(args []string) error {
 		return doRepair(statuses)
 	}
 	return nil
+}
+
+// englishList joins names the way a sentence does, because this one is read as a
+// sentence rather than scanned as a column.
+func englishList(names []string) string {
+	switch len(names) {
+	case 0:
+		return ""
+	case 1:
+		return names[0]
+	default:
+		return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
+	}
 }
 
 // sortedByCount orders the front ends by how much they are used, so the one
@@ -138,9 +165,6 @@ func verdictFor(s registry.Status, found int) (verdict, note string) {
 		return "no reader", fmt.Sprintf(
 			"its sessions are found but nothing can read them. Set \"normalize\" in %s\nto one of: %s.",
 			registry.Path(), strings.Join(readerNames(), ", "))
-
-	case s.StateDir == "":
-		return "not installed", ""
 
 	default:
 		return "no sessions yet", ""

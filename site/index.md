@@ -25,6 +25,7 @@ From a clone: `make install`. `hop hatch` is re-runnable — it repairs the wiri
 It exposes two tools:
 
 - **`list_sessions`** — every AI conversation on this machine, newest first, with the title each session gave itself, its working directory, and whether it was written to recently. Arguments: `limit` (integer, default 25), `active` (boolean, only sessions written to in the last few minutes).
+- **`list_sessions`** takes `match`, so an agent asked for a named thread narrows to it in one call rather than reading a list of four hundred.
 - **`load_session`** — one conversation into the current context, returned as reference material, with the path to the untouched original. Arguments: `session` (string, required) — an id, a title fragment, or a path; `last` (integer, optional) — carry only the last N messages, with the objective the thread opened with.
 
 Because of those two tools an agent can answer a plain request with no command and no paste. Ask any agent, in any session:
@@ -36,7 +37,9 @@ It reaches grasshopper over MCP, finds the session by its own title, and reads i
 ## Or do it yourself
 
 ```
-hop ls                see the sessions on this machine
+hop ls                see the sessions on this machine, newest first
+hop ls billing        only the ones that match
+hop ls --all          every one of them
 hop pack              pack one — the file and a reference land on your clipboard
 hop pack --last 5     only the last five messages, plus the objective
 hop pack --text       the conversation itself, for somewhere that reads neither
@@ -48,7 +51,7 @@ hop doctor            where it is looking, what it found, and which agents know 
 hop uninstall         unregister everywhere
 ```
 
-`hop pack` and `hop to` ask which session when you do not say. The chooser shows ten at a time, you **type to filter**, and it draws on the alternate screen so it leaves nothing in your scrollback.
+A listing shows twenty and says how many more there are; `hop ls <word>` narrows it. `hop pack` and `hop to` ask which session when you do not say — the chooser shows ten at a time, you **type to filter**, and it draws on the alternate screen so it leaves nothing in your scrollback. None of the three cares whether the machine holds forty sessions or four hundred.
 
 One `cmd-v` after `hop pack` does the right thing wherever it lands, because the clipboard holds two things at once:
 

@@ -1,8 +1,6 @@
 package transcript
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -24,17 +22,11 @@ func JSONLEvents(r io.ReadSeeker) ([]bundle.Turn, error) {
 	}
 
 	var turns []bundle.Turn
-	lines := 0
-	err := eachEvent(r, func(e event) {
-		lines++
-		turn, ok := e.turn()
-		if ok {
+	lines := eachJSON(r, false, func(e event) {
+		if turn, ok := e.turn(); ok {
 			turns = append(turns, turn)
 		}
 	})
-	if err != nil {
-		return nil, err
-	}
 	if lines == 0 {
 		return nil, fmt.Errorf("no parseable JSON lines")
 	}
@@ -104,27 +96,6 @@ func (e event) turn() (bundle.Turn, bool) {
 	return bundle.Turn{Who: who, Text: text}, true
 }
 
-// eachEvent walks JSON lines, skipping any it cannot parse. A transcript
-// truncated mid-write by a crash still yields everything before the damage.
-func eachEvent(r io.Reader, visit func(event)) error {
-	br := bufio.NewReaderSize(r, 1<<16)
-	for {
-		line, err := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var e event
-			if json.Unmarshal([]byte(trimmed), &e) == nil {
-				visit(e)
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-	}
-}
-
 // peekEvents is the cheap read a listing needs. This format states its working
 // directory and its surface once, in the first line, so there is nothing to
 // search for.
@@ -135,7 +106,7 @@ func peekEvents(r io.ReadSeeker) (Preview, error) {
 
 	var preview Preview
 	var dirs []string
-	err := eachEvent(io.LimitReader(r, peekBytes).(io.Reader), func(e event) {
+	eachJSON(io.LimitReader(r, peekBytes), false, func(e event) {
 		if e.Payload.Dir != "" {
 			dirs = append(dirs, e.Payload.Dir)
 		}
@@ -148,9 +119,6 @@ func peekEvents(r io.ReadSeeker) (Preview, error) {
 			}
 		}
 	})
-	if err != nil {
-		return Preview{}, err
-	}
 	preview.Dirs = mostRecentFirst(dirs)
 	return preview, nil
 }
@@ -161,23 +129,16 @@ func peekEvents(r io.ReadSeeker) (Preview, error) {
 // a listing has to read one more file — one file for all of them, which is
 // cheaper than the alternative.
 func titlesFromIndex(r io.Reader) map[string]string {
-	titles := map[string]string{}
-	br := bufio.NewReaderSize(r, 1<<16)
-	for {
-		line, err := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var entry struct {
-				ID   string `json:"id"`
-				Name string `json:"thread_name"`
-			}
-			if json.Unmarshal([]byte(trimmed), &entry) == nil && entry.ID != "" && entry.Name != "" {
-				// Later lines win: the name is revised as a session finds its
-				// subject.
-				titles[entry.ID] = entry.Name
-			}
-		}
-		if err != nil {
-			return titles
-		}
+	type entry struct {
+		ID   string `json:"id"`
+		Name string `json:"thread_name"`
 	}
+	titles := map[string]string{}
+	eachJSON(r, false, func(e entry) {
+		if e.ID != "" && e.Name != "" {
+			// Later lines win: the name is revised as a session finds its subject.
+			titles[e.ID] = e.Name
+		}
+	})
+	return titles
 }

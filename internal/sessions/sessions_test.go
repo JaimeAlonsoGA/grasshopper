@@ -300,3 +300,33 @@ func TestLabelNamesTheHopASessionCameFrom(t *testing.T) {
 		}
 	}
 }
+
+// One definition of "matches", shared by the search on a listing, the filter in
+// the chooser and resolving a name on the command line. Three subtly different
+// answers is how somebody comes to see a session in a list and be told it does
+// not exist when they ask for it.
+func TestMatchingIsOneDefinition(t *testing.T) {
+	all := []Session{
+		{ID: "abcd", Path: "/x/11111111-2222-3333-4444-555555555555.jsonl", Agent: "grok", Surface: "terminal", Opening: "Why is the build red?"},
+		{ID: "efgh", Path: "/x/99999999-8888-7777-6666-555555555555.jsonl", Agent: "cursor", Surface: "editor", Title: "Billing resolver"},
+	}
+	for _, c := range []struct {
+		needle string
+		want   int
+		why    string
+	}{
+		{"", 2, "no word means no narrowing"},
+		{"abcd", 1, "the handle from the listing"},
+		{"billing", 1, "a fragment of the title"},
+		{"BILLING", 1, "and case is not the point"},
+		{"build", 1, "a fragment of what it opened with, for a session with no title"},
+		{"cursor", 1, "the agent it came from"},
+		{"terminal", 1, "the app it came from"},
+		{"11111111", 1, "the underlying identifier, for anyone who has it"},
+		{"nothing here", 0, "and no match is no match"},
+	} {
+		if got := len(Matching(all, c.needle)); got != c.want {
+			t.Errorf("Matching(%q) = %d, want %d — %s", c.needle, got, c.want, c.why)
+		}
+	}
+}

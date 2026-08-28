@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"grasshopper/internal/bundle"
 	"grasshopper/internal/registry"
@@ -12,18 +13,44 @@ import (
 // runList and runShow are the same calls the agents make. Sharing them is the
 // point: what you read here is exactly what an agent is given.
 func runList(args []string) error {
-	fs := flags("ls", "")
+	fs := flags("ls", "[what]")
 	active := fs.Bool("active", false, "only sessions written to in the last few minutes")
-	if _, err := parse(fs, args); err != nil {
+	n := fs.Int("n", listPage, "how many to show, newest first")
+	all := fs.Bool("all", false, "every session, however many there are")
+	rest, err := parse(fs, args)
+	if err != nil {
 		return err
 	}
-	text, err := listTool(argsJSON(map[string]any{"active": *active, "limit": 200}))
+	if *all {
+		*n = -1 // every one of them
+	}
+
+	// The same code the agents call. A listing somebody reads and a listing an
+	// agent reads are the same question, and two implementations of it would
+	// disagree the week after they were written.
+	text, err := listing(argsJSON(map[string]any{
+		"active": *active,
+		"limit":  *n,
+		"match":  strings.Join(rest, " "),
+	}))
 	if err != nil {
 		return err
 	}
 	fmt.Print(text)
+	if strings.Contains(text, " of ") {
+		fmt.Print("Narrow it with hop ls <word>, or see them all with hop ls --all.\n")
+	}
 	return nil
 }
+
+// listPage is how many sessions a listing shows before it says there are more.
+//
+// A page rather than everything, because the number grows without limit and a
+// terminal does not: past a screenful the answer scrolls away from the person
+// who asked for it. Twenty fits a small window with the footer still visible,
+// and the footer is what makes the ceiling honest — it says how many were left
+// out and how to ask for them.
+const listPage = 20
 
 func runShow(args []string) error {
 	fs := flags("show", "[session]")

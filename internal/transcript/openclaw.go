@@ -1,10 +1,8 @@
 package transcript
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
-	"time"
 
 	"grasshopper/internal/bundle"
 )
@@ -143,16 +141,4 @@ func (e claw) text() string {
 		}
 	}
 	return e.Text
-}
-
-// seconds normalises a stamp that may arrive in seconds or milliseconds.
-func seconds(v int64) int64 {
-	if v > 1e12 {
-		return v / 1000
-	}
-	return v
-}
-
-func contextWithTimeout(d time.Duration) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), d)
 }

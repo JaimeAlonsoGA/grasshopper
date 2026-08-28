@@ -101,8 +101,7 @@ reaches grasshopper over MCP without you typing anything. Or do it yourself:
     hop ls                       see the sessions on this machine
     hop pack                     pack one into a hop, reference on your clipboard
     hop pack --last 5            only the last five messages, plus the objective
-    hop pack --full              the whole hop on your clipboard, for a browser tab
-    hop pack --attach            the file too, for a chat window that takes them
+    hop pack --text              the conversation itself, for somewhere that reads neither
     hop to                       send a hop to another agent — it asks which
     hop source                   which apps are linked
 
@@ -136,20 +135,12 @@ func flags(name, synopsis string) *flag.FlagSet {
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(fs.Output(), strings.TrimRight("usage: hop "+name+" "+synopsis, " "))
-		// A flag with no description is one kept working for somebody who already
-		// learned it, under a name that has since been improved. It answers, and
-		// it is not offered.
-		shown := false
-		fs.VisitAll(func(f *flag.Flag) {
-			if f.Usage == "" {
-				return
-			}
-			if !shown {
-				fmt.Fprintln(fs.Output())
-				shown = true
-			}
-			fmt.Fprintf(fs.Output(), "  -%s\n    \t%s\n", f.Name, f.Usage)
-		})
+		any := false
+		fs.VisitAll(func(*flag.Flag) { any = true })
+		if any {
+			fmt.Fprintln(fs.Output())
+			fs.PrintDefaults()
+		}
 	}
 	return fs
 }

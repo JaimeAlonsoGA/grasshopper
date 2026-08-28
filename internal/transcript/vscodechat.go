@@ -1,7 +1,6 @@
 package transcript
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,10 +28,7 @@ func JSONLPatch(r io.ReadSeeker) ([]bundle.Turn, error) {
 		return nil, err
 	}
 
-	state, lines, err := replay(r)
-	if err != nil {
-		return nil, err
-	}
+	state, lines := replay(r)
 	if lines == 0 {
 		return nil, fmt.Errorf("no parseable JSON lines")
 	}
@@ -121,27 +117,10 @@ func splice[T any](have []T, add []T, at *int) []T {
 }
 
 // replay applies every line to the state and reports how many it could read.
-func replay(r io.Reader) (chatState, int, error) {
+func replay(r io.Reader) (chatState, int) {
 	var state chatState
-	lines := 0
-
-	br := bufio.NewReaderSize(r, 1<<16)
-	for {
-		line, err := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			var p patch
-			if json.Unmarshal([]byte(trimmed), &p) == nil {
-				lines++
-				apply(&state, p)
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				return state, lines, nil
-			}
-			return state, lines, nil
-		}
-	}
+	lines := eachJSON(r, false, func(p patch) { apply(&state, p) })
+	return state, lines
 }
 
 // apply routes one patch. An unrecognised path is not an error: this reader is
@@ -252,10 +231,7 @@ func peekPatch(r io.ReadSeeker) (Preview, error) {
 		return Preview{}, err
 	}
 
-	head, _, err := replay(io.LimitReader(r, peekBytes))
-	if err != nil {
-		return Preview{}, err
-	}
+	head, _ := replay(io.LimitReader(r, peekBytes))
 	tail := chatState{}
 	if size > peekBytes {
 		if _, err := r.Seek(size-peekBytes, io.SeekStart); err != nil {
@@ -263,10 +239,10 @@ func peekPatch(r io.ReadSeeker) (Preview, error) {
 		}
 		// The read begins mid-line, so the first one is dropped rather than
 		// half-parsed.
-		br := bufio.NewReaderSize(r, 1<<16)
-		if _, err := br.ReadString('\n'); err == nil {
-			tail, _, _ = replay(br)
-		}
+		tail.Requests = nil
+		var state chatState
+		eachJSON(r, true, func(p patch) { apply(&state, p) })
+		tail = state
 	}
 
 	preview := Preview{Title: head.Title}

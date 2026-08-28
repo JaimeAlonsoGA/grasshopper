@@ -1,8 +1,6 @@
 package transcript
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -25,13 +23,7 @@ func JSONLSteps(r io.ReadSeeker) ([]bundle.Turn, error) {
 	}
 
 	var turns []bundle.Turn
-	lines := 0
-	eachLine(r, false, func(raw []byte) {
-		var s step
-		if json.Unmarshal(raw, &s) != nil {
-			return
-		}
-		lines++
+	lines := eachJSON(r, false, func(s step) {
 		if turn, ok := s.turn(); ok {
 			turns = append(turns, turn)
 		}
@@ -91,12 +83,8 @@ func peekSteps(r io.ReadSeeker) (Preview, error) {
 		return Preview{}, err
 	}
 	var preview Preview
-	eachLine(io.LimitReader(r, peekBytes), false, func(raw []byte) {
+	eachJSON(io.LimitReader(r, peekBytes), false, func(s step) {
 		if preview.Opening != "" {
-			return
-		}
-		var s step
-		if json.Unmarshal(raw, &s) != nil {
 			return
 		}
 		if turn, ok := s.turn(); ok && turn.Who == bundle.Me {
@@ -104,27 +92,4 @@ func peekSteps(r io.ReadSeeker) (Preview, error) {
 		}
 	})
 	return preview, nil
-}
-
-// eachLine walks JSON lines and hands each one over whole.
-//
-// It is shared by the readers whose format is one self-contained object per line,
-// which is most of them: the differences between those formats are in what the
-// object says, never in how the file is cut into objects.
-func eachLine(r io.Reader, skipFirst bool, each func([]byte)) {
-	br := bufio.NewReaderSize(r, 1<<16)
-	if skipFirst {
-		if _, err := br.ReadString('\n'); err != nil {
-			return
-		}
-	}
-	for {
-		line, err := br.ReadString('\n')
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			each([]byte(trimmed))
-		}
-		if err != nil {
-			return
-		}
-	}
 }
