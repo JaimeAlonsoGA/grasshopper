@@ -66,6 +66,8 @@ Any agent that writes its sessions to disk. `hop source` answers this for your m
 APP                       SESSIONS  LAST USED  STATUS
 Copilot, VS Code          22        6 Aug      linked
 Codex, ChatGPT app        24        33m ago    linked
+Grok, terminal            1         1h ago     linked
+Antigravity, editor       1         1h ago     linked
 Claude Code, VS Code      8         6h ago     linked
 Claude Code, desktop app  7         just now   linked
 Claude Code, terminal     1         8h ago     linked
@@ -114,7 +116,7 @@ Summarise, interpret, or add a section it inferred. It drops reasoning traces an
 
 **Does it have an MCP server?** Yes. `hop hatch` registers it with every agent it finds, with two tools: `list_sessions` and `load_session`.
 
-**Which apps can it read?** Any agent that writes sessions to disk: Claude Code in the terminal, VS Code, the desktop app and phone; Codex in the ChatGPT desktop app, the terminal and VS Code; Copilot Chat in VS Code and the editors built on it. Others take one JSON entry in `registry.json`.
+**Which apps can it read?** Any agent that writes sessions to disk: Claude Code in the terminal, VS Code, the desktop app and phone; Codex in the ChatGPT desktop app, the terminal and VS Code; Copilot Chat in VS Code and the editors built on it; Grok Build in the terminal; Antigravity. Others take one JSON entry in `registry.json`.
 
 **What can't it read?** Browser tabs and cloud sessions leave nothing on your disk. For those, `hop pack --full` on something reachable, and paste.
 

@@ -42,7 +42,7 @@ A hop is one packed conversation: a bounded text block whose header names the so
 
 ## What it reads
 
-Claude Code (terminal, VS Code, desktop app, phone), Codex (ChatGPT desktop app, terminal, VS Code) and Copilot Chat (VS Code, VS Code Insiders, and the editors built on them). Any other agent that writes sessions to disk can be added with one JSON entry in ~/.grasshopper/registry.json, which holds your changes and starts empty: a field you set wins, everything else is whatever the current version ships.
+Claude Code (terminal, VS Code, desktop app, phone), Codex (ChatGPT desktop app, terminal, VS Code), Copilot Chat (VS Code, VS Code Insiders, and the editors built on them), Grok Build (terminal) and Antigravity. Any other agent that writes sessions to disk can be added with one JSON entry in ~/.grasshopper/registry.json, which holds your changes and starts empty: a field you set wins, everything else is whatever the current version ships.
 
 ## What it cannot read
 
