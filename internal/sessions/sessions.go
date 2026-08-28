@@ -52,6 +52,11 @@ type Session struct {
 	Agent  string // registry key
 	Format string
 
+	// Key names one conversation inside a file that holds many. Empty for the
+	// ordinary case, where the file is the conversation and the path is enough
+	// to address it.
+	Key string
+
 	// Title is what the agent named this session — the same string the person
 	// already recognises, not a guess made from their first line.
 	Title string
@@ -139,14 +144,15 @@ func List() ([]Session, error) {
 		}
 		titles := index(agent)
 		for _, path := range registry.Transcripts(agent) {
-			s := describe(path, key, agent.Normalize, agent.Surfaces)
-			// A title from the agent's own index beats one read out of the
-			// transcript only when the transcript had none.
-			if s.Title == "" {
-				s.Title = titles[identifier(path)]
+			for _, s := range open(path, key, agent) {
+				// A title from the agent's own index beats one read out of the
+				// transcript only when the transcript had none.
+				if s.Title == "" {
+					s.Title = titles[identifier(path)]
+				}
+				s.Active = time.Since(s.When) < ActiveWindow
+				all = append(all, s)
 			}
-			s.Active = time.Since(s.When) < ActiveWindow
-			all = append(all, s)
 		}
 	}
 	sort.Slice(all, func(i, j int) bool { return all[i].When.After(all[j].When) })
@@ -171,7 +177,7 @@ func assignIDs(all []Session) {
 		seen := map[string]bool{}
 		clash := false
 		for _, s := range all {
-			id := handle(identifier(s.Path), length)
+			id := handle(identifier(s.source()), length)
 			if seen[id] {
 				clash = true
 				break
@@ -182,13 +188,25 @@ func assignIDs(all []Session) {
 			continue
 		}
 		for i := range all {
-			all[i].ID = handle(identifier(all[i].Path), length)
+			all[i].ID = handle(identifier(all[i].source()), length)
 		}
 		return
 	}
 	for i := range all {
-		all[i].ID = identifier(all[i].Path)
+		all[i].ID = identifier(all[i].source())
 	}
+}
+
+// source is what a session's handle is derived from. For most, the file is the
+// conversation and its path answers. For one held inside a database, every
+// conversation shares the path, so the key is the only thing that tells them
+// apart — and deriving the handle from anything else hands two conversations the
+// same name.
+func (s Session) source() string {
+	if s.Key != "" {
+		return s.Key
+	}
+	return s.Path
 }
 
 // handle hashes an identifier down to something a person can type. Base32's
@@ -263,17 +281,7 @@ func Find(want string) (Session, error) {
 // Load reads a session in full and renders it as a hop. last is how many of the
 // most recent messages to carry, or zero for all of them.
 func (s Session) Load(cap, last int) (bundle.Bundle, error) {
-	reader, err := transcript.Get(s.Format)
-	if err != nil {
-		return bundle.Bundle{}, err
-	}
-	f, err := os.Open(s.Path)
-	if err != nil {
-		return bundle.Bundle{}, err
-	}
-	defer f.Close()
-
-	turns, err := reader(f)
+	turns, err := s.turns()
 	if err != nil {
 		return bundle.Bundle{}, fmt.Errorf("%s: %w", s.Label(), err)
 	}
@@ -290,6 +298,23 @@ func (s Session) Load(cap, last int) (bundle.Bundle, error) {
 	}, turns, cap, last), nil
 }
 
+// turns reads the conversation, from a file or from a row of one.
+func (s Session) turns() ([]bundle.Turn, error) {
+	if s.Key != "" {
+		return transcript.One(s.Format, s.Path, s.Key)
+	}
+	reader, err := transcript.Get(s.Format)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(s.Path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return reader(f)
+}
+
 // index reads the agent's session list, for formats that keep their titles in one.
 func index(a registry.Agent) map[string]string {
 	titles := map[string]string{}
@@ -304,6 +329,53 @@ func index(a registry.Agent) map[string]string {
 		f.Close()
 	}
 	return titles
+}
+
+// open is every session a path offers: one for an ordinary transcript, and as
+// many as it holds for a file that keeps a whole history in a database.
+func open(path, key string, agent registry.Agent) []Session {
+	if !transcript.IsContainer(agent.Normalize) {
+		return []Session{describe(path, key, agent.Normalize, agent.Surfaces)}
+	}
+	inside, err := transcript.Inside(agent.Normalize, path)
+	if err != nil {
+		return nil
+	}
+	when, size := stat(path)
+	var out []Session
+	for _, c := range inside {
+		s := Session{
+			ID:      c.Key,
+			Path:    path,
+			Key:     c.Key,
+			Agent:   key,
+			Format:  agent.Normalize,
+			Title:   c.Title,
+			Opening: c.Opening,
+			When:    when,
+			Bytes:   size,
+			Surface: surfaceFromPath(path, agent.Surfaces),
+		}
+		// The file's own timestamp is when the database was last written, which
+		// is the same instant for every conversation in it. The row's own stamp
+		// is the one that tells them apart.
+		if c.When > 0 {
+			s.When = time.Unix(c.When, 0)
+		}
+		if c.Dir != "" {
+			s.Dirs = []string{c.Dir}
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+func stat(path string) (time.Time, int64) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return time.Time{}, 0
+	}
+	return info.ModTime(), info.Size()
 }
 
 func describe(path, agent, format string, surfaces map[string]string) Session {

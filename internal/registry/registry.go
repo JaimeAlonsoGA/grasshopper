@@ -124,19 +124,16 @@ func Default() Registry {
 			Name: "Copilot",
 			Transcripts: "~/Library/Application Support/Code/User/workspaceStorage/*/chatSessions/*.jsonl," +
 				"~/Library/Application Support/Code - Insiders/User/workspaceStorage/*/chatSessions/*.jsonl," +
-				"~/Library/Application Support/Cursor/User/workspaceStorage/*/chatSessions/*.jsonl," +
 				"~/Library/Application Support/Windsurf/User/workspaceStorage/*/chatSessions/*.jsonl," +
 				"~/Library/Application Support/Trae/User/workspaceStorage/*/chatSessions/*.jsonl," +
 				"~/Library/Application Support/Antigravity/User/workspaceStorage/*/chatSessions/*.jsonl," +
-				"~/.config/Code/User/workspaceStorage/*/chatSessions/*.jsonl," +
-				"~/.config/Cursor/User/workspaceStorage/*/chatSessions/*.jsonl",
+				"~/.config/Code/User/workspaceStorage/*/chatSessions/*.jsonl",
 			Normalize: "jsonl-patch",
 			// This format writes no entrypoint of its own, so the folder the file
 			// was found in is what names the editor.
 			Surfaces: map[string]string{
 				"Code":            "VS Code",
 				"Code - Insiders": "VS Code Insiders",
-				"Cursor":          "Cursor",
 				"Windsurf":        "Windsurf",
 				"Trae":            "Trae",
 				"Antigravity":     "Antigravity",
@@ -160,6 +157,26 @@ func Default() Registry {
 			Transcripts: "~/.gemini/antigravity/brain/*/.system_generated/logs/transcript.jsonl",
 			Normalize:   "jsonl-steps",
 			Surfaces:    map[string]string{"antigravity": "editor"},
+		},
+		// Cursor keeps every conversation in one key-value table inside the
+		// editor's own state database, so this is a container: the path names the
+		// database and a key names the conversation in it.
+		"cursor": {
+			Name: "Cursor",
+			Transcripts: "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb," +
+				"~/.config/Cursor/User/globalStorage/state.vscdb",
+			Normalize: "sqlite-cursor",
+			Launch:    "cursor",
+			Surfaces:  map[string]string{"Cursor": "editor"},
+		},
+		// OpenClaw keeps one database per agent id, with every session it has run
+		// inside it. Same shape as Cursor, different tables.
+		"openclaw": {
+			Name:        "OpenClaw",
+			Transcripts: "~/.openclaw/agents/*/agent/openclaw-agent.sqlite",
+			Normalize:   "sqlite-openclaw",
+			Launch:      "openclaw",
+			Surfaces:    map[string]string{".openclaw": "gateway"},
 		},
 	}
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>grasshopper — move a session between agents</title>
+<title>Grasshopper — Move a session between agents</title>
 <meta name="description" content="grasshopper reads the sessions your AI agents already write to disk, packs one, and hands it to another agent over MCP or the clipboard. One command, local only: no network, no model calls, no account.">
 <link rel="canonical" href="https://hopcli.dev/">
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
@@ -221,7 +221,7 @@
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important } html { scroll-behavior: auto } }
 </style>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"grasshopper","alternateName":["hop","hopcli","grasshopper CLI"],"applicationCategory":"DeveloperApplication","applicationSubCategory":"Command-line tool","operatingSystem":"macOS, Linux","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"url":"https://hopcli.dev/","sameAs":["https://github.com/JaimeAlonsoGA/grasshopper"],"codeRepository":"https://github.com/JaimeAlonsoGA/grasshopper","downloadUrl":"https://hopcli.dev/install.sh","installUrl":"https://hopcli.dev/","releaseNotes":"https://github.com/JaimeAlonsoGA/grasshopper/releases","programmingLanguage":"Go","author":{"@type":"Person","name":"Jaime Alonso","url":"https://github.com/JaimeAlonsoGA"},"keywords":"MCP server, Model Context Protocol, AI agent session transfer, Claude Code, Codex, session handoff, context transfer, local-first, CLI","description":"grasshopper carries a conversation from one AI agent to another. It reads the session transcripts local AI coding agents already write to disk, packs one into a portable file called a hop, and delivers it to another agent over MCP or the clipboard. Local only: no network, no model calls, no account.","featureList":["Built-in MCP server with two tools, list_sessions and load_session, so any agent can find and load a past session by title","Reads Claude Code sessions from the terminal, VS Code, the desktop app and phone","Reads Codex sessions from the ChatGPT desktop app and the terminal","Reads Copilot Chat sessions from VS Code and the editors built on it","Reads Grok Build sessions from the terminal","Reads Antigravity sessions","hop pack puts both the file and a text reference on the clipboard","hop pack --last N carries only the end of a thread, with the question that started it","hop to opens a session in another command-line agent","Drops reasoning and tool payloads: a 64 MB session becomes 109 KB of what was said","Every hop carries a verification code such as HOP-K3QZ","Local only: no network calls, no model calls, no account"]}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"grasshopper","alternateName":["hop","hopcli","grasshopper CLI"],"applicationCategory":"DeveloperApplication","applicationSubCategory":"Command-line tool","operatingSystem":"macOS, Linux","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT","isAccessibleForFree":true,"url":"https://hopcli.dev/","sameAs":["https://github.com/JaimeAlonsoGA/grasshopper"],"codeRepository":"https://github.com/JaimeAlonsoGA/grasshopper","downloadUrl":"https://hopcli.dev/install.sh","installUrl":"https://hopcli.dev/","releaseNotes":"https://github.com/JaimeAlonsoGA/grasshopper/releases","programmingLanguage":"Go","author":{"@type":"Person","name":"Jaime Alonso","url":"https://github.com/JaimeAlonsoGA"},"keywords":"MCP server, Model Context Protocol, AI agent session transfer, Claude Code, Codex, session handoff, context transfer, local-first, CLI","description":"grasshopper carries a conversation from one AI agent to another. It reads the session transcripts local AI coding agents already write to disk, packs one into a portable file called a hop, and delivers it to another agent over MCP or the clipboard. Local only: no network, no model calls, no account.","featureList":["Built-in MCP server with two tools, list_sessions and load_session, so any agent can find and load a past session by title","Reads Claude Code sessions from the terminal, VS Code, the desktop app and phone","Reads Codex sessions from the ChatGPT desktop app and the terminal","Reads Copilot Chat sessions from VS Code and the editors built on it","Reads Grok Build sessions from the terminal","Reads Antigravity sessions","Reads Cursor conversations out of the editor\u2019s own database","hop pack puts both the file and a text reference on the clipboard","hop pack --last N carries only the end of a thread, with the question that started it","hop to opens a session in another command-line agent","Drops reasoning and tool payloads: a 64 MB session becomes 109 KB of what was said","Every hop carries a verification code such as HOP-K3QZ","Local only: no network calls, no model calls, no account"]}
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does grasshopper do?","acceptedAnswer":{"@type":"Answer","text":"It carries a conversation from one AI agent to another. It reads the session files your local agents already write to disk, packs one into a file called a hop, and hands it to another agent over MCP or the clipboard, so you do not copy, paste and explain everything again."}},{"@type":"Question","name":"How do I install grasshopper?","acceptedAnswer":{"@type":"Answer","text":"Run: curl -fsSL https://hopcli.dev/install.sh | sh . It downloads the binary, puts it in ~/.local/bin and runs hop hatch, which registers it with every agent it finds."}},{"@type":"Question","name":"Does grasshopper have an MCP server?","acceptedAnswer":{"@type":"Answer","text":"Yes. hop hatch registers a built-in MCP server with every agent it finds. It exposes two tools: list_sessions returns the conversations on the machine, newest first, with the title each one gave itself and its working directory; load_session loads one into the current context as reference material, with the path to the untouched original. Because of that an agent can answer a request like 'bring me the thread where I worked on billing' with no command and no paste."}},{"@type":"Question","name":"Which apps can grasshopper read?","acceptedAnswer":{"@type":"Answer","text":"Claude Code in the terminal, in VS Code, in the desktop app and from a phone; Codex in the ChatGPT desktop app, the terminal and VS Code; and Copilot Chat in VS Code and the editors built on it. Run hop source to see what is linked on your machine. Any other agent that writes its sessions to disk can be added with one JSON entry in ~/.grasshopper/registry.json."}},{"@type":"Question","name":"What can grasshopper not do?","acceptedAnswer":{"@type":"Answer","text":"Sessions that live in the cloud or in a browser tab leave nothing on your disk, so it cannot read them. For those, pack something it can reach with hop pack --full and paste."}},{"@type":"Question","name":"Does grasshopper summarise the conversation?","acceptedAnswer":{"@type":"Answer","text":"No. It drops reasoning traces and tool payloads, which is how a 64 MB session becomes about 109 KB, and carries what was actually said verbatim, marked as reference material rather than instructions."}},{"@type":"Question","name":"Does grasshopper send anything over the network?","acceptedAnswer":{"@type":"Answer","text":"No. It is local only: no network, no model calls, no account. Hops are written to ~/.grasshopper on your own machine."}},{"@type":"Question","name":"What is a hop?","acceptedAnswer":{"@type":"Answer","text":"A hop is one packed conversation: a bounded text block with a header naming the source agent, the session title, the capture time, the working directory, the turn count and the path to the full original transcript. It carries a notice stating that everything between its delimiters is data rather than instructions, and a short code such as HOP-K3QZ that proves an agent read it."}}]}
@@ -283,7 +283,7 @@
       <div class="agent">
         <img src="/assets/agent-cursor.webp" width="112" height="112" alt="" loading="lazy">
         <b>Cursor</b>
-        <span class="off">not yet</span>
+        <span class="on">reads today</span>
       </div>
       <div class="agent open">
         <div class="marks">
@@ -295,7 +295,7 @@
         <b>And many more</b>
       </div>
     </div>
-    <p class="note">Every app that saves its sessions to disk. Five agents read today — Claude Code, Codex, Copilot, Grok Build and Antigravity — and anything else is a glob and a format in registry.json. Browser tabs and cloud sessions leave nothing behind, so those it cannot read at all.</p>
+    <p class="note">Every app that saves its sessions to disk. Six agents read today — Claude Code, Codex, Copilot, Cursor, Grok Build and Antigravity — and anything else is a glob and a format in registry.json. Browser tabs and cloud sessions leave nothing behind, so those it cannot read at all.</p>
   </section>
 
   <section>
@@ -411,6 +411,7 @@
 <span class="hdr">APP                       SESSIONS  LAST USED  STATUS</span>
 Copilot, VS Code          22        6 Aug      <span class="ok">linked</span>
 Grok, terminal            1         1h ago     <span class="ok">linked</span>
+Cursor, editor            2         2h ago     <span class="ok">linked</span>
 Antigravity, editor       1         1h ago     <span class="ok">linked</span>
 Codex, ChatGPT app        24        33m ago    <span class="ok">linked</span>
 Claude Code, VS Code      8         6h ago     <span class="ok">linked</span>
@@ -438,7 +439,7 @@ Codex, terminal           1         6m ago     <span class="ok">linked</span></p
       </div>
       <div>
         <h3>Which apps can it read?</h3>
-        <p>Claude Code in the terminal, VS Code, the desktop app and phone; Codex in the ChatGPT desktop app, the terminal and VS Code; Copilot Chat in VS Code and the editors built on it; Grok Build in the terminal; and Antigravity. Others take one JSON entry in <code>registry.json</code>.</p>
+        <p>Claude Code in the terminal, VS Code, the desktop app and phone; Codex in the ChatGPT desktop app, the terminal and VS Code; Copilot Chat in VS Code and the editors built on it; Grok Build in the terminal; Cursor; and Antigravity. Others take one JSON entry in <code>registry.json</code>.</p>
       </div>
       <div>
         <h3>What can't it read?</h3>
@@ -460,7 +461,7 @@ Codex, terminal           1         6m ago     <span class="ok">linked</span></p
   </section>
 
   <footer>
-    <span>Go, no dependencies. MIT.</span>
+    <span>Go. MIT.</span>
     <div class="links">
       <a href="https://github.com/JaimeAlonsoGA/grasshopper">source</a>
       <a href="https://github.com/JaimeAlonsoGA/grasshopper#readme">manual</a>
@@ -544,7 +545,7 @@ Codex, terminal           1         6m ago     <span class="ok">linked</span></p
     "I am no summariser. I am a courier.",
     "The clipboard is my saddlebag.",
     "No cloud, no account, no oath of fealty.",
-    "Written in Go. No dependencies, no goblins.",
+    "Written in Go. One dependency, and it earns its keep.",
     "Every hop bears a rune, like HOP-K3QZ. Proof it truly read you.",
     "Your old sessions sleep on your disk. I wake one and carry it.",
     "Context windows are mortal. Transcripts are not.",
@@ -580,6 +581,10 @@ Codex, terminal           1         6m ago     <span class="ok">linked</span></p
   function say(msg, ms, soft) {
     if (soft && (bubble.classList.contains("on") || barVisible)) {
       if (pending.length < 3 && pending.indexOf(msg) < 0) pending.push(msg);
+      // Rearmar aquí es lo que mantiene viva la conversación: sin esto, la
+      // primera frase encolada se lleva por delante el único reloj que pedía la
+      // siguiente, y Hopper no vuelve a hablar.
+      armIdle();
       return;
     }
     clearTimeout(petTimer);
@@ -597,7 +602,7 @@ Codex, terminal           1         6m ago     <span class="ok">linked</span></p
   }
   poke.addEventListener("click", function () { pending.length = 0; say(next(), 7400); });
 
-  say("Greetings, prompter.", 7000, true);
+  setTimeout(function () { say("Greetings, prompter.", 6800); }, 1200);
   armIdle();
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (entries) {

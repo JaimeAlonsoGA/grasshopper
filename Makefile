@@ -61,7 +61,7 @@ release: check
 	@rm -rf dist && mkdir -p dist
 	@for p in $(PLATFORMS); do \
 		os=$${p%/*}; arch=$${p#*/}; \
-		GOOS=$$os GOARCH=$$arch go build -ldflags '$(LDFLAGS)' -o dist/hop ./cmd/hop || exit 1; \
+		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -ldflags '$(LDFLAGS)' -o dist/hop ./cmd/hop || exit 1; \
 		tar -czf dist/grasshopper-$(VERSION)-$$os-$$arch.tar.gz -C dist hop; \
 		rm dist/hop; \
 	done

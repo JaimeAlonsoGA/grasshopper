@@ -95,6 +95,9 @@ installed apps, not registry keys:
 APP                       SESSIONS  LAST USED  STATUS
 Codex, ChatGPT app        24        33m ago    linked
 Copilot, VS Code          22        6 Aug      linked
+Cursor, editor            2         2h ago     linked
+Grok, terminal            1         1h ago     linked
+Antigravity, editor       1         1h ago     linked
 Claude Code, VS Code      8         6h ago     linked
 Claude Code, desktop app  7         just now   linked
 Claude Code, terminal     1         8h ago     linked
@@ -168,7 +171,10 @@ make check     gofmt, vet, tests
 make release   cross-compiled tarballs in dist/
 ```
 
-No dependencies: `go.mod` has no `require` block, and a test fails the build if
-one appears.
+One dependency: a pure-Go SQLite driver, for the agents that keep every
+conversation in a database rather than a file. It carries its own translated
+SQLite rather than binding to the system one, so `make release` still
+cross-compiles four platforms with cgo off and every binary still needs nothing
+installed to run.
 
 MIT.
