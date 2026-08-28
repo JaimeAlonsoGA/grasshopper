@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -47,6 +49,21 @@ func newSandbox(t *testing.T) *sandbox {
 	s.write(filepath.Join(dir, "bbbbbbbb-2222-2222-2222-222222222222.jsonl"),
 		`{"type":"ai-title","aiTitle":"Monorepo cleanup"}`+"\n"+
 			`{"type":"user","uuid":"v1","cwd":"`+home+`","message":{"role":"user","content":"clean it up"}}`+"\n")
+
+	// Long enough that a slice actually leaves a hole. On a two-turn conversation
+	// the objective rescue restores the only dropped turn, which is right and
+	// tests nothing.
+	long := `{"type":"ai-title","aiTitle":"Long thread"}` + "\n" +
+		`{"type":"user","uuid":"w0","cwd":"` + home + `","message":{"role":"user","content":"the original objective"}}` + "\n"
+	for i := 1; i <= 12; i++ {
+		role, content := "assistant", fmt.Sprintf(`[{"type":"text","text":"reply %d"}]`, i)
+		if i%2 == 0 {
+			role, content = "user", fmt.Sprintf(`"question %d"`, i)
+		}
+		long += fmt.Sprintf(`{"type":%q,"uuid":"w%d","parentUuid":"w%d","message":{"role":%q,"content":%s}}`+"\n",
+			role, i, i-1, role, content)
+	}
+	s.write(filepath.Join(dir, "cccccccc-3333-3333-3333-333333333333.jsonl"), long)
 
 	if err := os.MkdirAll(filepath.Join(home, ".grasshopper"), 0o700); err != nil {
 		t.Fatal(err)
@@ -203,8 +220,16 @@ func TestAmbiguousAndMissing(t *testing.T) {
 
 	r := s.run("show", "e")
 	r.wants(t, 1)
-	if !strings.Contains(r.stderr, "matches 2") {
+	// It names the candidates rather than picking one. The count is not the point,
+	// so it is not asserted — a fixture gaining a session should not fail a test
+	// about ambiguity.
+	if !strings.Contains(r.stderr, "matches") {
 		t.Errorf("stderr = %q", r.stderr)
+	}
+	for _, candidate := range []string{"Billing resolver", "Monorepo cleanup"} {
+		if !strings.Contains(r.stderr, candidate) {
+			t.Errorf("stderr does not name %q: %q", candidate, r.stderr)
+		}
 	}
 	s.run("show", "zzzz").wants(t, 1)
 }
@@ -297,6 +322,11 @@ func TestMCPReportsAToolFailureAsAResult(t *testing.T) {
 	}
 }
 
+// stripANSI removes colour so a test can assert on words rather than on bytes.
+var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string { return ansi.ReplaceAllString(s, "") }
+
 func text(t *testing.T, reply map[string]any) string {
 	t.Helper()
 	result, ok := reply["result"].(map[string]any)
@@ -316,11 +346,15 @@ func TestHatch(t *testing.T) {
 	s := newSandbox(t)
 	r := s.run("hatch")
 	r.wants(t, 0)
+	// Stripped, because hatch is the one command that colours its output and an
+	// escape sequence sitting between two words breaks every substring assertion
+	// about them.
+	plain := stripANSI(r.stdout)
 
 	// Grouped by app, not by session: this is a count, not a listing.
-	for _, want := range []string{"grasshopper", "Wiring it into your agents", "Looking around", "2 sessions", "An Agent", "hop pack", "Nothing ever leaves this machine"} {
-		if !strings.Contains(r.stdout, want) {
-			t.Errorf("hatch does not say %q:\n%s", want, r.stdout)
+	for _, want := range []string{"grasshopper", "Wiring it into your agents", "Looking around", "sessions in", "An Agent", "hop pack", "Nothing ever leaves this machine"} {
+		if !strings.Contains(plain, want) {
+			t.Errorf("hatch does not say %q:\n%s", want, plain)
 		}
 	}
 	// setup is what anybody would guess, so it has to be there too.
@@ -341,7 +375,7 @@ func TestHatchOnAnEmptyMachine(t *testing.T) {
 	r := s.run("hatch")
 	r.wants(t, 0)
 	// Saying "no sessions yet" is an answer. Printing an empty list is not.
-	if !strings.Contains(r.stdout, "no sessions yet") {
+	if !strings.Contains(stripANSI(r.stdout), "no sessions yet") {
 		t.Errorf("an empty machine got no explanation:\n%s", r.stdout)
 	}
 }
@@ -352,7 +386,7 @@ func TestLastIsOfferedAndWorks(t *testing.T) {
 	s := newSandbox(t)
 
 	in := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n" +
-		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"load_session","arguments":{"session":"Billing","last":1}}}` + "\n"
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"load_session","arguments":{"session":"Long thread","last":2}}}` + "\n"
 	r := s.stdin(in, "mcp")
 	r.wants(t, 0)
 
@@ -378,7 +412,7 @@ func TestLastIsOfferedAndWorks(t *testing.T) {
 	}
 	body := text(t, loaded)
 	// The objective travels with the slice, and the hole says it was asked for.
-	if !strings.Contains(body, "resolve the billing plans") {
+	if !strings.Contains(body, "the original objective") {
 		t.Errorf("the objective was not carried:\n%s", body)
 	}
 	if !strings.Contains(body, "not carried") {
@@ -391,15 +425,30 @@ func TestLastIsOfferedAndWorks(t *testing.T) {
 
 func TestShowLast(t *testing.T) {
 	s := newSandbox(t)
-	full := s.run("show", "Billing")
+	full := s.run("show", "Long thread")
 	full.wants(t, 0)
-	sliced := s.run("show", "Billing", "--last", "1")
+	sliced := s.run("show", "Long thread", "--last", "2")
 	sliced.wants(t, 0)
 
 	if len(sliced.stdout) >= len(full.stdout) {
 		t.Errorf("--last did not shorten anything: %d vs %d", len(sliced.stdout), len(full.stdout))
 	}
-	if !strings.Contains(sliced.stdout, "resolve the billing plans") {
+	if !strings.Contains(sliced.stdout, "the original objective") {
 		t.Error("the objective was dropped from the slice")
+	}
+}
+
+// Asking for fewer messages than a conversation has is not a slice, and must not
+// be reported as one: the objective rescue restores the only dropped turn, so the
+// document is complete and says so.
+func TestLastOnAShortConversationIsComplete(t *testing.T) {
+	s := newSandbox(t)
+	r := s.run("show", "Billing", "--last", "1")
+	r.wants(t, 0)
+	if !strings.Contains(r.stdout, "complete") {
+		t.Errorf("a two-turn conversation reported a hole:\n%s", r.stdout)
+	}
+	if strings.Contains(r.stdout, "not carried") {
+		t.Error("invented a hole")
 	}
 }
