@@ -1,0 +1,15 @@
+{"kind":0,"v":{"version":3,"sessionId":"1f8f0f4a","creationDate":1781525469962,"responderUsername":"GitHub Copilot","requests":[]}}
+{"kind":1,"k":["inputState","inputText"],"v":"a draft nobody sent"}
+{"kind":2,"k":["requests"],"v":[{"requestId":"r1","message":{"text":"Why is the build red?"},"response":[]}]}
+{"kind":2,"k":["requests",0,"response"],"v":[{"kind":"mcpServersStarting","didStartServerIds":[]}]}
+{"kind":2,"k":["requests",0,"response"],"v":{"value":"Because the fixture ","supportThemeIcons":false,"baseUri":{"$mid":1,"path":"/Users/you/code/api","scheme":"file"}}}
+{"kind":2,"k":["requests",0,"response"],"v":[{"kind":"thinking","value":"reasoning that must not travel"}]}
+{"kind":2,"k":["requests",0,"response"],"v":{"value":"says so.","supportThemeIcons":false,"baseUri":{"$mid":1,"path":"/Users/you/code/api","scheme":"file"}}}
+{"kind":1,"k":["requests",0,"modelState"],"v":{"tokens":41}}
+{"kind":2,"k":["requests"],"v":[{"requestId":"r2","message":{"text":"Fix it."},"response":[]}]}
+{"kind":2,"k":["requests",1,"response"],"v":[{"kind":"toolInvocationSerialized","toolId":"edit"}]}
+{"kind":1,"k":["requests",1,"response"],"v":[{"value":"Fixed.","supportThemeIcons":false,"baseUri":{"$mid":1,"path":"/Users/you/code/api","scheme":"file"}}]}
+{"kind":1,"k":["customTitle"],"v":"Red build"}
+{"kind":2,"k":["requests"],"v":[{"requestId":"r3","message":{"text":"And again?"},"response":[]}]}
+{"kind":2,"k":["requests",2,"response"],"v":[{"value":"One.","supportThemeIcons":false},{"kind":"thinking","value":"noise"}]}
+{"kind":2,"k":["requests",2,"response"],"i":0,"v":[{"value":"One.","supportThemeIcons":false},{"kind":"thinking","value":"noise"},{"value":" Two.","supportThemeIcons":false}]}

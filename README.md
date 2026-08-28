@@ -33,11 +33,11 @@ read, and shows you the two ways to use it. Nothing else to do.
 
   Looking around…
 
-     44 sessions in 7 apps
+     66 sessions in 8 apps
         Codex, ChatGPT app         24
+        Copilot, VS Code           22
         Claude Code, VS Code       8
-        Claude Code, desktop app   7
-        …and 4 more
+        …and 5 more
 ```
 
 It verifies the download against the checksums published with every release.
@@ -94,6 +94,7 @@ installed apps, not registry keys:
 ```
 APP                       SESSIONS  LAST USED  STATUS
 Codex, ChatGPT app        24        33m ago    linked
+Copilot, VS Code          22        6 Aug      linked
 Claude Code, VS Code      8         6h ago     linked
 Claude Code, desktop app  7         just now   linked
 Claude Code, terminal     1         8h ago     linked

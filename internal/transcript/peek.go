@@ -50,6 +50,8 @@ func Peek(format string, r io.ReadSeeker) (Preview, error) {
 		return peekJSONLTree(r)
 	case "jsonl-events":
 		return peekEvents(r)
+	case "jsonl-patch":
+		return peekPatch(r)
 	case "":
 		return Preview{}, errors.New("no transcript format configured for this agent")
 	default:

@@ -32,6 +32,7 @@ type Reader func(io.ReadSeeker) ([]bundle.Turn, error)
 var readers = map[string]Reader{
 	"jsonl-tree":   JSONLTree,
 	"jsonl-events": JSONLEvents,
+	"jsonl-patch":  JSONLPatch,
 }
 
 // Get looks a reader up by format key. An unknown key is an error and never a

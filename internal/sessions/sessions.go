@@ -139,7 +139,7 @@ func List() ([]Session, error) {
 		}
 		titles := index(agent)
 		for _, path := range registry.Transcripts(agent) {
-			s := describe(path, key, agent.Normalize)
+			s := describe(path, key, agent.Normalize, agent.Surfaces)
 			// A title from the agent's own index beats one read out of the
 			// transcript only when the transcript had none.
 			if s.Title == "" {
@@ -228,7 +228,7 @@ func Find(want string) (Session, error) {
 				return s, nil
 			}
 		}
-		return describe(abs, "", "jsonl-tree"), nil
+		return describe(abs, "", "jsonl-tree", nil), nil
 	}
 
 	needle := strings.ToLower(strings.TrimSuffix(filepath.Base(want), ".jsonl"))
@@ -306,7 +306,7 @@ func index(a registry.Agent) map[string]string {
 	return titles
 }
 
-func describe(path, agent, format string) Session {
+func describe(path, agent, format string, surfaces map[string]string) Session {
 	// ID is filled in by assignIDs, which needs the whole list to know how short
 	// it can be.
 	s := Session{ID: identifier(path), Path: path, Agent: agent, Format: format}
@@ -321,7 +321,29 @@ func describe(path, agent, format string) Session {
 			s.Title, s.Surface, s.Dirs, s.Opening = p.Title, p.Surface, p.Dirs, p.Opening
 		}
 	}
+	if s.Surface == "" {
+		s.Surface = surfaceFromPath(path, surfaces)
+	}
 	return s
+}
+
+// surfaceFromPath names the front end when the transcript does not.
+//
+// Some formats write which app they came from and some do not. For the ones that
+// do not, the path already answers it: a family of editors that share a chat
+// format do not share a folder. So a surface key is matched against the path's
+// own segments — never against the path as a string, which would let "Code" match
+// a project called code.
+func surfaceFromPath(path string, surfaces map[string]string) string {
+	if len(surfaces) == 0 {
+		return ""
+	}
+	for _, segment := range strings.Split(path, string(filepath.Separator)) {
+		if name, ok := surfaces[segment]; ok {
+			return name
+		}
+	}
+	return ""
 }
 
 // uuid finds a session identifier inside a filename.

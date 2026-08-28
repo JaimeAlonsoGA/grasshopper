@@ -114,6 +114,34 @@ func Default() Registry {
 				"codex_vscode":  "VS Code",
 			},
 		},
+		// Every editor in the VS Code family writes its chat to the same place
+		// under its own name. Listing the forks costs nothing when they are not
+		// installed — a glob that matches no file contributes no session — and
+		// the day one of them is, it is read without a release. Cursor keeps its
+		// own Composer in SQLite rather than here, so its folder appears in this
+		// list and stays empty until that changes.
+		"vscode-chat": {
+			Name: "Copilot",
+			Transcripts: "~/Library/Application Support/Code/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/Library/Application Support/Code - Insiders/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/Library/Application Support/Cursor/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/Library/Application Support/Windsurf/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/Library/Application Support/Trae/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/Library/Application Support/Antigravity/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/.config/Code/User/workspaceStorage/*/chatSessions/*.jsonl," +
+				"~/.config/Cursor/User/workspaceStorage/*/chatSessions/*.jsonl",
+			Normalize: "jsonl-patch",
+			// This format writes no entrypoint of its own, so the folder the file
+			// was found in is what names the editor.
+			Surfaces: map[string]string{
+				"Code":            "VS Code",
+				"Code - Insiders": "VS Code Insiders",
+				"Cursor":          "Cursor",
+				"Windsurf":        "Windsurf",
+				"Trae":            "Trae",
+				"Antigravity":     "Antigravity",
+			},
+		},
 	}
 }
 
