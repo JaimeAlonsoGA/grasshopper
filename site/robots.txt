@@ -1,0 +1,5 @@
+# Everything here is public and meant to be read, by people and by agents alike.
+User-agent: *
+Allow: /
+
+Sitemap: https://hopcli.dev/sitemap.xml

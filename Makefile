@@ -10,7 +10,7 @@ LDFLAGS  = -s -w -X main.version=$(VERSION)
 PLATFORMS = darwin/arm64 darwin/amd64 linux/arm64 linux/amd64
 SHA256 := $(shell command -v shasum >/dev/null 2>&1 && echo "shasum -a 256" || echo sha256sum)
 
-.PHONY: help build version-check install uninstall check release site clean
+.PHONY: help build version-check install uninstall check release site og clean
 
 help:
 	@echo "make install     build, put hop on PATH ($(PREFIX)), register it with your agents"
@@ -18,6 +18,7 @@ help:
 	@echo "make check       gofmt, vet, tests"
 	@echo "make release     cross-compiled binaries in dist/"
 	@echo "make site        assemble the static site, installer included"
+	@echo "make og          re-render the social preview image (macOS)"
 	@echo ""
 	@echo "grasshopper $(VERSION)"
 
@@ -74,6 +75,18 @@ release: check
 site: install.sh
 	@cp install.sh site/install.sh
 	@echo "site/ assembled ($(shell wc -c < install.sh | tr -d ' ') bytes of installer)"
+
+# og re-renders the social preview from its source.
+#
+# Quick Look fits an SVG to the height of a square thumbnail, so a 1200x630 canvas
+# comes back with its right edge cropped off. The source is authored square with the
+# artwork letterboxed in the middle, and the middle is cropped back out — which is
+# deterministic, unlike hoping the renderer preserves an aspect ratio.
+og:
+	@rm -rf /tmp/grasshopper-og && mkdir -p /tmp/grasshopper-og
+	@qlmanage -t -s 1200 -o /tmp/grasshopper-og packaging/og.svg >/dev/null 2>&1
+	@sips -c 630 1200 /tmp/grasshopper-og/og.svg.png --out site/og.png >/dev/null
+	@sips -g pixelWidth -g pixelHeight site/og.png | awk '/pixel/{printf "%s ", $$2} END{print "site/og.png"}'
 
 clean:
 	@rm -rf hop dist site/install.sh
