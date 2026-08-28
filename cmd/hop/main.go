@@ -100,6 +100,7 @@ reaches grasshopper over MCP without you typing anything. Or do it yourself:
 
     hop ls                       see the sessions on this machine
     hop pack                     pack one into a hop, reference on your clipboard
+    hop pack --last 5            only the last five messages, plus the objective
     hop pack --full              the whole hop on your clipboard, for a browser tab
     hop to                       send a hop to another agent — it asks which
     hop source                   which apps are linked

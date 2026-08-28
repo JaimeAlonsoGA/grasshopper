@@ -58,18 +58,30 @@ type Bundle struct {
 	Source Source
 	Turns  []Turn
 
-	// Omitted counts turns dropped for size, and OmittedAfter says where the hole
-	// is: -1 when it sits before everything, 0 when the objective was rescued and
-	// the gap opens after it. The renderer marks the hole rather than hiding it.
+	// Omitted counts turns left behind, and OmittedAfter says where the hole is:
+	// -1 when it sits before everything, 0 when the objective was rescued and the
+	// gap opens after it. The renderer marks the hole rather than hiding it.
 	Omitted      int
 	OmittedAfter int
+
+	// Asked distinguishes a hole somebody chose from one a ceiling forced. The
+	// document must not claim it ran out of room when it was told to bring the
+	// last five messages.
+	Asked bool
 }
 
-// New assembles a bundle: filter, cap, then fingerprint what survived. One
+// New assembles a bundle: filter, trim, then fingerprint what survived. One
 // constructor, so Code and Turns can never disagree.
-func New(src Source, turns []Turn, cap int) Bundle {
-	kept, omitted, after := Fit(Compact(turns), cap)
-	return Bundle{Code: Code(kept), Source: src, Turns: kept, Omitted: omitted, OmittedAfter: after}
+//
+// last is how many of the most recent messages to carry, or zero for all of them.
+// It is a separate idea from cap: one is somebody asking for the end of a
+// conversation, the other is a ceiling nothing should cross.
+func New(src Source, turns []Turn, cap, last int) Bundle {
+	kept, omitted, after := Fit(Compact(turns), cap, last)
+	return Bundle{
+		Code: Code(kept), Source: src, Turns: kept,
+		Omitted: omitted, OmittedAfter: after, Asked: last > 0 && omitted > 0,
+	}
 }
 
 // Compact merges consecutive turns from the same speaker and normalises
@@ -90,17 +102,20 @@ func Compact(turns []Turn) []Turn {
 	return out
 }
 
-// Fit brings a conversation under the cap, and it protects one turn specially:
-// the first thing the human said.
+// Fit trims a conversation to the last few messages, to a byte ceiling, or to
+// both — and protects one turn specially: the first thing the human said.
 //
 // That turn is the objective, stated in their own words, and it sits at the far
 // end of the file from everything else worth keeping. Dropping purely from the
-// oldest end loses it first — which leaves the receiving agent the conclusion of
-// a discussion whose purpose it can only guess at. A cap of zero or less means no
-// limit. A single turn larger than the cap is kept anyway: a turn cut in half is
-// a turn that lies about what was said.
-func Fit(turns []Turn, cap int) (kept []Turn, omitted, after int) {
-	if cap <= 0 || len(turns) == 0 {
+// oldest end loses it first, which leaves the receiving agent the conclusion of a
+// discussion whose purpose it can only guess at. It matters most for a deliberate
+// slice: "bring me the last five messages" is asking for an answer without its
+// question unless the question comes too.
+//
+// A cap or a count of zero or less means no limit. A single turn larger than the
+// cap is kept anyway: a turn cut in half is a turn that lies about what was said.
+func Fit(turns []Turn, cap, last int) (kept []Turn, omitted, after int) {
+	if len(turns) == 0 {
 		return turns, 0, -1
 	}
 
@@ -110,24 +125,29 @@ func Fit(turns []Turn, cap int) (kept []Turn, omitted, after int) {
 		sizes[i] = len(renderTurn(t))
 		total += sizes[i]
 	}
-	if total <= cap {
+
+	// Both constraints are the same operation — walk the start of the
+	// conversation forward — so they share one loop and produce one hole.
+	first := 0
+	if last > 0 && len(turns) > last {
+		first = len(turns) - last
+		for i := 0; i < first; i++ {
+			total -= sizes[i] + len(separator)
+		}
+	}
+	if cap <= 0 && first == 0 {
 		return turns, 0, -1
 	}
 
-	objective := -1
-	for i, t := range turns {
-		if t.Who == Me {
-			objective = i
-			break
-		}
-	}
-
-	first := 0
-	for first < len(turns)-1 && total > cap {
+	objective := firstFrom(turns)
+	for cap > 0 && first < len(turns)-1 && total > cap {
 		if first != objective {
 			total -= sizes[first] + len(separator)
 		}
 		first++
+	}
+	if first == 0 {
+		return turns, 0, -1
 	}
 
 	// The objective rejoins the front of what survived, and the gap between them
@@ -136,6 +156,16 @@ func Fit(turns []Turn, cap int) (kept []Turn, omitted, after int) {
 		return append([]Turn{turns[objective]}, turns[first:]...), first - 1, 0
 	}
 	return turns[first:], first, -1
+}
+
+// firstFrom is the index of the first thing the human said, or -1.
+func firstFrom(turns []Turn) int {
+	for i, t := range turns {
+		if t.Who == Me {
+			return i
+		}
+	}
+	return -1
 }
 
 // Code is a short fingerprint of the conversation. It exists so a person can tell

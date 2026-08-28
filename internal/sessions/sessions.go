@@ -260,8 +260,9 @@ func Find(want string) (Session, error) {
 	}
 }
 
-// Load reads a session in full and renders it as a bundle.
-func (s Session) Load(cap int) (bundle.Bundle, error) {
+// Load reads a session in full and renders it as a hop. last is how many of the
+// most recent messages to carry, or zero for all of them.
+func (s Session) Load(cap, last int) (bundle.Bundle, error) {
 	reader, err := transcript.Get(s.Format)
 	if err != nil {
 		return bundle.Bundle{}, err
@@ -286,7 +287,7 @@ func (s Session) Load(cap int) (bundle.Bundle, error) {
 		// The original is left where its own agent wrote it. Copying it would be
 		// a second source of truth that can disagree with the first.
 		RawPath: s.Path,
-	}, turns, cap), nil
+	}, turns, cap, last), nil
 }
 
 // index reads the agent's session list, for formats that keep their titles in one.

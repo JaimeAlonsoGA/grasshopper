@@ -27,13 +27,14 @@ func runList(args []string) error {
 
 func runShow(args []string) error {
 	fs := flags("show", "[session]")
+	last := fs.Int("last", 0, "print only the last N messages, plus what was first asked for")
 	if _, err := parse(fs, args); err != nil {
 		return err
 	}
 	if fs.NArg() == 0 {
 		return fmt.Errorf("%w: name a session; hop ls shows them", errUsage)
 	}
-	text, err := loadTool(argsJSON(map[string]any{"session": fs.Arg(0)}))
+	text, err := loadTool(argsJSON(map[string]any{"session": fs.Arg(0), "last": *last}))
 	if err != nil {
 		return err
 	}

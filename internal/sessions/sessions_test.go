@@ -165,7 +165,7 @@ func TestLoadRendersABundleThatPointsAtTheOriginal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := s.Load(0)
+	b, err := s.Load(0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +195,7 @@ func TestEmptySessionIsListedAndSaysSo(t *testing.T) {
 	if len(all) != 1 {
 		t.Fatalf("got %d sessions", len(all))
 	}
-	if _, err := all[0].Load(0); err == nil {
+	if _, err := all[0].Load(0, 0); err == nil {
 		t.Error("loading an empty session should say there is nothing in it")
 	}
 }

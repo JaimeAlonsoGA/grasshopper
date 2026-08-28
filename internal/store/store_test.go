@@ -14,7 +14,7 @@ func hop(text string) bundle.Bundle {
 	return bundle.New(bundle.Source{
 		Agent: "an-agent", Title: "Billing resolver",
 		Captured: time.Date(2026, 8, 26, 16, 12, 0, 0, time.UTC),
-	}, []bundle.Turn{{Who: bundle.Me, Text: text}}, bundle.Cap)
+	}, []bundle.Turn{{Who: bundle.Me, Text: text}}, bundle.Cap, 0)
 }
 
 func TestWrite(t *testing.T) {

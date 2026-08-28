@@ -24,6 +24,7 @@ import (
 func runTo(args []string) error {
 	fs := flags("to", "[agent] [session]")
 	dryRun := fs.Bool("dry-run", false, "pack the hop and print the command, launch nothing")
+	last := fs.Int("last", 0, "carry only the last N messages, plus what was first asked for")
 	rest, err := parse(fs, args)
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func runTo(args []string) error {
 	if err != nil {
 		return err
 	}
-	b, err := session.Load(bundle.Cap)
+	b, err := session.Load(bundle.Cap, *last)
 	if err != nil {
 		return err
 	}

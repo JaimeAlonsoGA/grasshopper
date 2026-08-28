@@ -345,3 +345,61 @@ func TestHatchOnAnEmptyMachine(t *testing.T) {
 		t.Errorf("an empty machine got no explanation:\n%s", r.stdout)
 	}
 }
+
+// A slice of the recent end is a common ask, and an agent can only choose it if
+// the tool says the parameter exists.
+func TestLastIsOfferedAndWorks(t *testing.T) {
+	s := newSandbox(t)
+
+	in := `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"load_session","arguments":{"session":"Billing","last":1}}}` + "\n"
+	r := s.stdin(in, "mcp")
+	r.wants(t, 0)
+
+	lines := strings.Split(strings.TrimSpace(r.stdout), "\n")
+	var listed map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &listed); err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range listed["result"].(map[string]any)["tools"].([]any) {
+		tool := raw.(map[string]any)
+		if tool["name"] != "load_session" {
+			continue
+		}
+		props := tool["inputSchema"].(map[string]any)["properties"].(map[string]any)
+		if _, ok := props["last"]; !ok {
+			t.Error("load_session does not advertise last, so no agent will ever use it")
+		}
+	}
+
+	var loaded map[string]any
+	if err := json.Unmarshal([]byte(lines[1]), &loaded); err != nil {
+		t.Fatal(err)
+	}
+	body := text(t, loaded)
+	// The objective travels with the slice, and the hole says it was asked for.
+	if !strings.Contains(body, "resolve the billing plans") {
+		t.Errorf("the objective was not carried:\n%s", body)
+	}
+	if !strings.Contains(body, "not carried") {
+		t.Errorf("the hole is not reported as a choice:\n%s", body)
+	}
+	if strings.Contains(body, "omitted for size") {
+		t.Error("a slice that was asked for claims it ran out of room")
+	}
+}
+
+func TestShowLast(t *testing.T) {
+	s := newSandbox(t)
+	full := s.run("show", "Billing")
+	full.wants(t, 0)
+	sliced := s.run("show", "Billing", "--last", "1")
+	sliced.wants(t, 0)
+
+	if len(sliced.stdout) >= len(full.stdout) {
+		t.Errorf("--last did not shorten anything: %d vs %d", len(sliced.stdout), len(full.stdout))
+	}
+	if !strings.Contains(sliced.stdout, "resolve the billing plans") {
+		t.Error("the objective was dropped from the slice")
+	}
+}

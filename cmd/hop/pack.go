@@ -20,6 +20,7 @@ import (
 func runPack(args []string) error {
 	fs := flags("pack", "[session]")
 	full := fs.Bool("full", false, "put the whole hop on the clipboard, for somewhere that cannot read a file")
+	last := fs.Int("last", 0, "carry only the last N messages, plus what was first asked for")
 	reveal := fs.Bool("reveal", false, "show it in the file manager, ready to drag into an app")
 	rest, err := parse(fs, args)
 	if err != nil {
@@ -30,7 +31,7 @@ func runPack(args []string) error {
 	if err != nil {
 		return err
 	}
-	b, err := session.Load(bundle.Cap)
+	b, err := session.Load(bundle.Cap, *last)
 	if err != nil {
 		return err
 	}

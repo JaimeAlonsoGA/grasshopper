@@ -36,6 +36,11 @@ func tools() []mcp.Tool {
 				"by a fragment of its title, or by its path — whatever list_sessions showed.",
 			Schema: object(map[string]any{
 				"session": field("string", "Id, title fragment, or path of the session to load."),
+				"last": field("integer", "Carry only the last N messages instead of the whole "+
+					"conversation. Use it when somebody asks about the end of a thread — what was "+
+					"just decided, the last thing tried, what it concluded — rather than the work "+
+					"as a whole. The first thing they asked for is carried as well, so the excerpt "+
+					"still has its question. Omit for the whole conversation."),
 			}, "session"),
 			Call: loadTool,
 		},
@@ -90,6 +95,7 @@ func listTool(raw json.RawMessage) (string, error) {
 func loadTool(raw json.RawMessage) (string, error) {
 	var args struct {
 		Session string `json:"session"`
+		Last    int    `json:"last"`
 	}
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("unreadable arguments: %w", err)
@@ -102,7 +108,7 @@ func loadTool(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	b, err := session.Load(bundle.Cap)
+	b, err := session.Load(bundle.Cap, args.Last)
 	if err != nil {
 		return "", err
 	}

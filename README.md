@@ -57,10 +57,17 @@ No command, no paste. The hop carries a short code, so when the agent mentions
 ```
 hop ls                see the sessions on this machine
 hop pack              pack one — the file and a reference land on your clipboard
+hop pack --last 5     only the last five messages
 hop pack --full       the whole conversation on the clipboard, for a browser tab
 hop to                open one in a command-line agent — it asks which
 hop source            which apps are linked
 ```
+
+`--last N` works on `pack`, `to` and `show`, and agents can ask for it too. It
+carries **the last N messages plus the first thing you asked for**, because a
+handful of recent messages is an answer without its question otherwise. The header
+says `5 turns of 110, 105 earlier turns not carried` — a slice you asked for is
+never reported as running out of room.
 
 `hop pack` and `hop to` ask which session when you do not say. The chooser shows
 ten at a time, you **type to filter**, and it draws on the alternate screen so it
