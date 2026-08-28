@@ -142,6 +142,25 @@ func Default() Registry {
 				"Antigravity":     "Antigravity",
 			},
 		},
+		// Grok Build keeps one folder per session, under a folder named after the
+		// directory the session was working in. Everything it needs is in the
+		// chat history itself; the summary beside it is the agent's own notes.
+		"grok": {
+			Name:        "Grok",
+			Transcripts: "~/.grok/sessions/*/*/chat_history.jsonl",
+			Normalize:   "jsonl-grok",
+			Launch:      "grok,~/.local/bin/grok,~/.grok/bin/grok",
+			Surfaces:    map[string]string{".grok": "terminal"},
+		},
+		// Antigravity writes its steps to a transcript beside the conversation
+		// database it keeps for itself. The database is protobuf; the transcript
+		// is not, and it holds the same exchange.
+		"antigravity": {
+			Name:        "Antigravity",
+			Transcripts: "~/.gemini/antigravity/brain/*/.system_generated/logs/transcript.jsonl",
+			Normalize:   "jsonl-steps",
+			Surfaces:    map[string]string{"antigravity": "editor"},
+		},
 	}
 }
 

@@ -1,0 +1,9 @@
+{"type":"system","content":"You are a coding agent. Never travel."}
+{"type":"user","content":[{"type":"text","text":"<user_info>\nOS Version: macos\n</user_info>"}]}
+{"type":"user","synthetic_reason":"skills","content":[{"type":"text","text":"<system-reminder>\nSkills available\n</system-reminder>"}]}
+{"type":"user","prompt_index":0,"content":[{"type":"text","text":"<user_query>\nWhy is the build red?\n</user_query>"}]}
+{"type":"reasoning","id":"r1","summary":"thinking that must not travel"}
+{"type":"assistant","content":"Because the fixture says so."}
+{"type":"tool_result","content":"exit status 1"}
+{"type":"user","prompt_index":1,"content":[{"type":"text","text":"<user_query>\nFix it.\n</user_query>"}]}
+{"type":"assistant","content":"Fixed."}

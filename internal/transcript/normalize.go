@@ -33,6 +33,8 @@ var readers = map[string]Reader{
 	"jsonl-tree":   JSONLTree,
 	"jsonl-events": JSONLEvents,
 	"jsonl-patch":  JSONLPatch,
+	"jsonl-grok":   JSONLGrok,
+	"jsonl-steps":  JSONLSteps,
 }
 
 // Get looks a reader up by format key. An unknown key is an error and never a

@@ -1,0 +1,7 @@
+{"step_index":0,"type":"USER_INPUT","content":"<USER_REQUEST>\nWhy is the build red?\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-08-28\n</ADDITIONAL_METADATA>"}
+{"step_index":1,"type":"CHECKPOINT","content":"{{ CHECKPOINT 0 }} a summary the agent wrote about itself"}
+{"step_index":2,"type":"PLANNER_RESPONSE","thinking":"thinking that must not travel","tool_calls":[{"name":"read"}]}
+{"step_index":3,"type":"GENERIC","content":"File Path: file:///tmp/x"}
+{"step_index":4,"type":"PLANNER_RESPONSE","content":"Because the fixture says so."}
+{"step_index":5,"type":"USER_INPUT","content":"<USER_REQUEST>\nFix it.\n</USER_REQUEST>"}
+{"step_index":6,"type":"PLANNER_RESPONSE","content":"Fixed."}
