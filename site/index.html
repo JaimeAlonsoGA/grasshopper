@@ -112,8 +112,6 @@
   .agent img { width: clamp(72px, 8vw, 112px); height: clamp(72px, 8vw, 112px); border-radius: 18px; }
   .agent b { font-size: 15px; font-weight: 500; color: oklch(0.88 0.02 88); }
   .agent span { font-family: var(--mono); font-size: 11.5px; line-height: 1.7; color: var(--ink-dim); }
-  .agent span.on { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.7 0.1 145); }
-  .agent span.off { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: oklch(0.58 0.03 85); }
   .agent.open { background: var(--sunk); border: 1px dashed oklch(0.4 0.04 82); align-content: center; }
   .agent.open .marks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: clamp(72px, 8vw, 112px); height: clamp(72px, 8vw, 112px); justify-content: center; align-content: center; }
   .agent.open .marks img { width: 100%; height: 100%; border-radius: 10px; opacity: 0.85; }
@@ -263,27 +261,22 @@
       <div class="agent">
         <img src="/assets/agent-claude-code.webp" width="112" height="112" alt="" loading="lazy">
         <b>Claude</b>
-        <span class="on">reads today</span>
       </div>
       <div class="agent">
         <img src="/assets/agent-codex.webp" width="112" height="112" alt="" loading="lazy">
         <b>Codex</b>
-        <span class="on">reads today</span>
       </div>
       <div class="agent">
         <img src="/assets/agent-copilot.webp" width="112" height="112" alt="" loading="lazy">
         <b>Copilot</b>
-        <span class="on">reads today</span>
       </div>
       <div class="agent">
-        <img src="/assets/agent-trae.webp" width="112" height="112" alt="" loading="lazy">
-        <b>Trae</b>
-        <span class="off">not yet</span>
+        <img src="/assets/agent-vscode.webp" width="112" height="112" alt="" loading="lazy">
+        <b>VS Code</b>
       </div>
       <div class="agent">
         <img src="/assets/agent-cursor.webp" width="112" height="112" alt="" loading="lazy">
         <b>Cursor</b>
-        <span class="on">reads today</span>
       </div>
       <div class="agent open">
         <div class="marks">
@@ -295,7 +288,7 @@
         <b>And many more</b>
       </div>
     </div>
-    <p class="note">Every app that saves its sessions to disk. Six agents read today — Claude Code, Codex, Copilot, Cursor, Grok Build and Antigravity — and anything else is a glob and a format in registry.json. Browser tabs and cloud sessions leave nothing behind, so those it cannot read at all.</p>
+    <p class="note">Your agents already write every conversation to disk. grasshopper reads those files where they lie, packs one, and hands it over — it needs no plugin, no account and no cooperation from the app itself, so an agent it has never heard of is a glob and a format away.</p>
   </section>
 
   <section>

@@ -21,6 +21,7 @@ func runPack(args []string) error {
 	fs := flags("pack", "[session]")
 	full := fs.Bool("full", false, "put the whole hop on the clipboard, for somewhere that cannot read a file")
 	last := fs.Int("last", 0, "carry only the last N messages, plus what was first asked for")
+	attach := fs.Bool("attach", false, "put the file on the clipboard too, for a chat window that takes attachments")
 	reveal := fs.Bool("reveal", false, "show it in the file manager, ready to drag into an app")
 	rest, err := parse(fs, args)
 	if err != nil {
@@ -47,9 +48,18 @@ func runPack(args []string) error {
 	if *full {
 		text = bundle.Render(b)
 	}
-	// The file goes on the clipboard beside the text, so one paste does the right
-	// thing wherever it lands.
-	attached, copied := toClipboard(path, text)
+	// The text alone, unless asked otherwise.
+	//
+	// A clipboard carrying both a file and a string was meant to let each
+	// destination take what it understood. What it actually does is let the
+	// destination choose, and some of them choose the file and then paste its
+	// name: "HOP-K3QZ.md", no path, no words, nothing anybody can act on. That
+	// failure is silent and it lands on the one command this tool exists for.
+	//
+	// So the string is the default everywhere, because it works everywhere — it
+	// carries the absolute path, so an agent that can read a file still can. The
+	// attachment is worth having for a chat window, and it is now asked for.
+	attached, copied := toClipboard(path, text, *attach && !*full)
 
 	// The path alone on stdout, so it can be piped or passed to another command.
 	// Everything a person reads goes to stderr.
@@ -69,13 +79,16 @@ func runPack(args []string) error {
 	case copied:
 		fmt.Fprintf(os.Stderr, "  clipboard  %s\n", kind)
 		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
-		fmt.Fprint(os.Stderr, "\nPaste it, or attach the file.\n")
+		fmt.Fprint(os.Stderr, "\nPress cmd-v.\n")
 	default:
 		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
 		fmt.Fprint(os.Stderr, "\nNo clipboard command on this machine — the file above is the hop.\n")
 	}
 	if !*full {
 		fmt.Fprint(os.Stderr, "For a browser tab, which cannot read your disk: hop pack --full.\n")
+		if !*attach {
+			fmt.Fprint(os.Stderr, "For a chat window that takes attachments: hop pack --attach.\n")
+		}
 	}
 
 	if *reveal {
@@ -100,17 +113,17 @@ func showInFileManager(path string) error {
 	return fmt.Errorf("no file manager on PATH")
 }
 
-// toClipboard puts the file and the text on the clipboard together, and reports
-// which of the two made it.
+// toClipboard puts the hop on the clipboard and reports what made it there.
 //
-// Both, because one paste has to work in three different kinds of destination: a
-// chat window that takes attachments wants the file, a terminal agent wants a path
-// it can read, and a browser tab wants the words. A clipboard holding several
-// formats lets each of them take what it understands, which is how copying a file
-// in a file manager has always worked.
-func toClipboard(path, text string) (attached, copied bool) {
-	if err := bothFlavours(path, text); err == nil {
-		return true, true
+// withFile adds the file beside the text. It is off by default: a clipboard
+// holding two flavours does not let each destination take what it understands, it
+// lets the destination decide — and an editor that decides on the file pastes its
+// name and nothing else.
+func toClipboard(path, text string, withFile bool) (attached, copied bool) {
+	if withFile {
+		if err := bothFlavours(path, text); err == nil {
+			return true, true
+		}
 	}
 	// Everywhere else, or if that failed: the text alone.
 	for _, candidate := range [][]string{{"pbcopy"}, {"wl-copy"}, {"xclip", "-selection", "clipboard"}} {

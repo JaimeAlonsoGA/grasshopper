@@ -61,6 +61,7 @@ No command, no paste. The hop carries a short code, so when the agent mentions
 ```
 hop ls                see the sessions on this machine
 hop pack              pack one — the file and a reference land on your clipboard
+hop pack --attach     the file on the clipboard too, for a chat window
 hop pack --last 5     only the last five messages
 hop pack --full       the whole conversation on the clipboard, for a browser tab
 hop to                open one in a command-line agent — it asks which

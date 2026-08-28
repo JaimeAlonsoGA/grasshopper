@@ -31,9 +31,10 @@ A hop is one packed conversation: a bounded text block whose header names the so
 
 - `hop hatch` — set it up; re-runnable, repairs rather than duplicates
 - `hop ls` — the sessions on this machine
-- `hop pack` — pack one; the file and a text reference land on the clipboard together
+- `hop pack` — pack one; a short reference carrying its absolute path lands on the clipboard
 - `hop pack --last 5` — only the last five messages, plus the objective the thread opened with
 - `hop pack --full` — the whole conversation on the clipboard, for a browser tab
+- `hop pack --attach` — the file on the clipboard as well, for a chat window that takes attachments
 - `hop to` — open one in a command-line agent; it asks which
 - `hop show` — print a session as a bundle
 - `hop source` — which apps are linked

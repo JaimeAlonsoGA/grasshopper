@@ -129,6 +129,9 @@ func Default() Registry {
 				"~/Library/Application Support/Antigravity/User/workspaceStorage/*/chatSessions/*.jsonl," +
 				"~/.config/Code/User/workspaceStorage/*/chatSessions/*.jsonl",
 			Normalize: "jsonl-patch",
+			Launch: "code,/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code," +
+				"~/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+			MCPAdd: []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
 			// This format writes no entrypoint of its own, so the folder the file
 			// was found in is what names the editor.
 			Surfaces: map[string]string{
@@ -147,6 +150,8 @@ func Default() Registry {
 			Transcripts: "~/.grok/sessions/*/*/chat_history.jsonl",
 			Normalize:   "jsonl-grok",
 			Launch:      "grok,~/.local/bin/grok,~/.grok/bin/grok",
+			MCPAdd:      []string{"mcp", "add", "{name}", "{command}", "--", "mcp"},
+			MCPRemove:   []string{"mcp", "remove", "{name}"},
 			Surfaces:    map[string]string{".grok": "terminal"},
 		},
 		// Antigravity writes its steps to a transcript beside the conversation
@@ -166,8 +171,13 @@ func Default() Registry {
 			Transcripts: "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb," +
 				"~/.config/Cursor/User/globalStorage/state.vscdb",
 			Normalize: "sqlite-cursor",
-			Launch:    "cursor",
-			Surfaces:  map[string]string{"Cursor": "editor"},
+			Launch: "cursor,/Applications/Cursor.app/Contents/Resources/app/bin/cursor," +
+				"~/Applications/Cursor.app/Contents/Resources/app/bin/cursor",
+			// The VS Code family registers an MCP server from a JSON blob on the
+			// command line, and offers no way to take one back out again. So this
+			// adds and hop uninstall says plainly that it cannot remove.
+			MCPAdd:   []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
+			Surfaces: map[string]string{"Cursor": "editor"},
 		},
 		// OpenClaw keeps one database per agent id, with every session it has run
 		// inside it. Same shape as Cursor, different tables.

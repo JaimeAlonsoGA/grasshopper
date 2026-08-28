@@ -39,6 +39,7 @@ It reaches grasshopper over MCP, finds the session by its own title, and reads i
 hop ls                see the sessions on this machine
 hop pack              pack one — the file and a reference land on your clipboard
 hop pack --last 5     only the last five messages, plus the objective
+hop pack --attach     put the file on the clipboard too, for a chat window
 hop pack --full       the whole conversation on the clipboard, for a browser tab
 hop to                open one in a command-line agent — it asks which
 hop show              print a session as a bundle
@@ -50,13 +51,13 @@ hop uninstall         unregister everywhere
 
 `hop pack` and `hop to` ask which session when you do not say. The chooser shows ten at a time, you **type to filter**, and it draws on the alternate screen so it leaves nothing in your scrollback.
 
-One `cmd-v` after `hop pack` does the right thing wherever it lands, because the clipboard holds two things at once:
+One `cmd-v` after `hop pack` lands a short reference carrying the hop's absolute path, which is what any agent that can read a file needs. Two flags change what travels:
 
 | what lands | where |
 |---|---|
-| the file | a chat window that takes attachments |
-| a short reference to it | any agent that can read a path |
+| a short reference to it | the default — any agent that can read a path |
 | `--full`, the whole thing | a browser tab, which cannot read your disk |
+| `--attach`, the file too | a chat window that takes attachments |
 
 ## What it reads
 
