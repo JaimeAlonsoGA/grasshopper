@@ -136,12 +136,20 @@ func flags(name, synopsis string) *flag.FlagSet {
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(fs.Output(), strings.TrimRight("usage: hop "+name+" "+synopsis, " "))
-		any := false
-		fs.VisitAll(func(*flag.Flag) { any = true })
-		if any {
-			fmt.Fprintln(fs.Output())
-			fs.PrintDefaults()
-		}
+		// A flag with no description is one kept working for somebody who already
+		// learned it, under a name that has since been improved. It answers, and
+		// it is not offered.
+		shown := false
+		fs.VisitAll(func(f *flag.Flag) {
+			if f.Usage == "" {
+				return
+			}
+			if !shown {
+				fmt.Fprintln(fs.Output())
+				shown = true
+			}
+			fmt.Fprintf(fs.Output(), "  -%s\n    \t%s\n", f.Name, f.Usage)
+		})
 	}
 	return fs
 }

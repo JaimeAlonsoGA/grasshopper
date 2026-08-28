@@ -39,25 +39,24 @@ It reaches grasshopper over MCP, finds the session by its own title, and reads i
 hop ls                see the sessions on this machine
 hop pack              pack one — the file and a reference land on your clipboard
 hop pack --last 5     only the last five messages, plus the objective
-hop pack --attach     put the file on the clipboard too, for a chat window
-hop pack --full       the whole conversation on the clipboard, for a browser tab
+hop pack --text       the conversation itself, for somewhere that reads neither
 hop to                open one in a command-line agent — it asks which
 hop show              print a session as a bundle
 hop source            which apps are linked
 hop hatch             set it up, or repair the wiring
-hop doctor            where grasshopper is looking, and what it found
+hop doctor            where it is looking, what it found, and which agents know it
 hop uninstall         unregister everywhere
 ```
 
 `hop pack` and `hop to` ask which session when you do not say. The chooser shows ten at a time, you **type to filter**, and it draws on the alternate screen so it leaves nothing in your scrollback.
 
-One `cmd-v` after `hop pack` lands a short reference carrying the hop's absolute path, which is what any agent that can read a file needs. Two flags change what travels:
+One `cmd-v` after `hop pack` does the right thing wherever it lands, because the clipboard holds two things at once:
 
 | what lands | where |
 |---|---|
-| a short reference to it | the default — any agent that can read a path |
-| `--full`, the whole thing | a browser tab, which cannot read your disk |
-| `--attach`, the file too | a chat window that takes attachments |
+| the file | a chat window that takes attachments |
+| a short reference carrying its path | any agent that can read a file |
+| `--text`, the conversation itself | a browser tab, or anywhere that reads neither |
 
 ## What it reads
 
@@ -81,7 +80,7 @@ Another agent can be added with one JSON entry in `~/.grasshopper/registry.json`
 
 ## What it cannot read
 
-Browser tabs (ChatGPT, Claude.ai, Grok, Gemini web), phone chat apps, and sessions that run in the cloud. They leave nothing on disk. For those, use `hop pack --full` on something reachable and paste.
+Browser tabs (ChatGPT, Claude.ai, Grok, Gemini web), phone chat apps, and sessions that run in the cloud. They leave nothing on disk. For those, use `hop pack --text` on something reachable and paste.
 
 ## What a hop is
 
@@ -120,7 +119,7 @@ Summarise, interpret, or add a section it inferred. It drops reasoning traces an
 
 **Which apps can it read?** Any agent that writes sessions to disk: Claude Code in the terminal, VS Code, the desktop app and phone; Codex in the ChatGPT desktop app, the terminal and VS Code; Copilot Chat in VS Code and the editors built on it; Cursor; Grok Build in the terminal; Antigravity. Others take one JSON entry in `registry.json`.
 
-**What can't it read?** Browser tabs and cloud sessions leave nothing on your disk. For those, `hop pack --full` on something reachable, and paste.
+**What can't it read?** Browser tabs and cloud sessions leave nothing on your disk. For those, `hop pack --text` on something reachable, and paste.
 
 **Does anything leave my machine?** No network, no model calls, no account. Hops are written to `~/.grasshopper` on your own disk.
 

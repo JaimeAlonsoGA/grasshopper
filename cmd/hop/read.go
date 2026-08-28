@@ -64,9 +64,12 @@ func runDoctor(args []string) error {
 	if err != nil {
 		return err
 	}
-	rows := [][]string{{"AGENT", "STATE", "SESSIONS", "READABLE"}}
+	reg, _ := registry.Load()
+	rows := [][]string{{"AGENT", "STATE", "SESSIONS", "READABLE", "KNOWS HOP"}}
 	for _, s := range statuses {
-		rows = append(rows, []string{s.Key, dash(short(s.StateDir)), count(s.Transcripts), yesno(s.Readable)})
+		rows = append(rows, []string{
+			s.Key, dash(short(s.StateDir)), count(s.Transcripts), yesno(s.Readable), knowsHop(reg[s.Key]),
+		})
 	}
 	fmt.Println()
 	writeTable(os.Stdout, rows)
@@ -89,7 +92,40 @@ func runDoctor(args []string) error {
 			break
 		}
 	}
+	for _, s := range statuses {
+		if knowsHop(reg[s.Key]) == "no" {
+			fmt.Print("An agent that does not know hop cannot be asked for a session — run hop hatch.\n")
+			break
+		}
+	}
 	return nil
+}
+
+// knowsHop answers the question that a listing of readable sessions does not:
+// can this agent be asked for one.
+//
+// Reading an agent's sessions and being reachable from inside it are separate
+// things, and grasshopper reported only the first. Somebody installed it, saw
+// every session listed, asked their editor for one of them, and the editor had
+// never heard of grasshopper — with nothing anywhere saying so.
+//
+// The answer comes from the file the agent keeps its servers in, not from asking
+// the agent: one of them health-checks every server it has before answering,
+// which is eight seconds for a question a diagnostic asks about seven agents.
+func knowsHop(a registry.Agent) string {
+	config := registry.ConfigPath(a)
+	switch {
+	case config != "" && a.MCPConfigKey != "":
+		if hasMCPConfig(config, a.MCPConfigKey, serverName) {
+			return "yes"
+		}
+		return "no"
+	case len(a.MCPAdd) > 0:
+		// Registered through a command line whose list this cannot read cheaply.
+		return "?"
+	default:
+		return "—"
+	}
 }
 
 func argsJSON(m map[string]any) []byte {

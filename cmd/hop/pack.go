@@ -19,14 +19,20 @@ import (
 // getting whatever was on the clipboard before — which is exactly what happened.
 func runPack(args []string) error {
 	fs := flags("pack", "[session]")
-	full := fs.Bool("full", false, "put the whole hop on the clipboard, for somewhere that cannot read a file")
+	// --text is the name for what this does: the words instead of the file. --full
+	// said how much rather than what shape, which is the axis nobody was choosing
+	// on, and it shipped — so it still works and is not advertised twice.
+	asText := fs.Bool("text", false, "put the whole conversation on the clipboard as text, for somewhere that cannot read a file")
+	full := fs.Bool("full", false, "")
 	last := fs.Int("last", 0, "carry only the last N messages, plus what was first asked for")
-	attach := fs.Bool("attach", false, "put the file on the clipboard too, for a chat window that takes attachments")
+	attach := fs.Bool("attach", false, "")
 	reveal := fs.Bool("reveal", false, "show it in the file manager, ready to drag into an app")
 	rest, err := parse(fs, args)
 	if err != nil {
 		return err
 	}
+	*asText = *asText || *full
+	_ = attach // the file is the default; the flag survives so a learned command keeps working
 
 	session, err := choose(rest, "pack which session?")
 	if err != nil {
@@ -45,21 +51,17 @@ func runPack(args []string) error {
 	// handover was meant to save. --full is for a browser tab, which cannot read a
 	// file on this machine.
 	text := bundle.Pointer(b, path)
-	if *full {
+	if *asText {
 		text = bundle.Render(b)
 	}
-	// The text alone, unless asked otherwise.
+	// The file, with the reference as the string beside it. A chat window takes
+	// the attachment, a terminal agent takes the path, and the two travel in one
+	// paste — which is the whole point of packing rather than copying.
 	//
-	// A clipboard carrying both a file and a string was meant to let each
-	// destination take what it understood. What it actually does is let the
-	// destination choose, and some of them choose the file and then paste its
-	// name: "HOP-K3QZ.md", no path, no words, nothing anybody can act on. That
-	// failure is silent and it lands on the one command this tool exists for.
-	//
-	// So the string is the default everywhere, because it works everywhere — it
-	// carries the absolute path, so an agent that can read a file still can. The
-	// attachment is worth having for a chat window, and it is now asked for.
-	attached, copied := toClipboard(path, text, *attach && !*full)
+	// --text is the way out for a destination that reads neither: it puts the
+	// conversation itself on the clipboard and no file at all, so nothing can
+	// choose the file over the words.
+	attached, copied := toClipboard(path, text, !*asText)
 
 	// The path alone on stdout, so it can be piped or passed to another command.
 	// Everything a person reads goes to stderr.
@@ -67,15 +69,15 @@ func runPack(args []string) error {
 
 	fmt.Fprintf(os.Stderr, "\n%s · %s · %s\n", b.Code, b.Source.Title, b.Content())
 	kind := "a reference to it"
-	if *full {
-		kind = fmt.Sprintf("the whole hop, %d bytes", len(text))
+	if *asText {
+		kind = fmt.Sprintf("the whole conversation, %d bytes", len(text))
 	}
 	switch {
 	case attached:
 		fmt.Fprintf(os.Stderr, "  clipboard  the file, and %s\n", kind)
 		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
 		fmt.Fprint(os.Stderr, "\nPress cmd-v. A chat that takes attachments takes the file; anywhere else\n")
-		fmt.Fprint(os.Stderr, "gets the text.\n")
+		fmt.Fprint(os.Stderr, "gets the reference, which carries the path above.\n")
 	case copied:
 		fmt.Fprintf(os.Stderr, "  clipboard  %s\n", kind)
 		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
@@ -84,11 +86,8 @@ func runPack(args []string) error {
 		fmt.Fprintf(os.Stderr, "  file       %s\n", path)
 		fmt.Fprint(os.Stderr, "\nNo clipboard command on this machine — the file above is the hop.\n")
 	}
-	if !*full {
-		fmt.Fprint(os.Stderr, "For a browser tab, which cannot read your disk: hop pack --full.\n")
-		if !*attach {
-			fmt.Fprint(os.Stderr, "For a chat window that takes attachments: hop pack --attach.\n")
-		}
+	if !*asText {
+		fmt.Fprint(os.Stderr, "If it pastes only a filename, that destination reads neither: hop pack --text.\n")
 	}
 
 	if *reveal {

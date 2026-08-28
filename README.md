@@ -61,9 +61,8 @@ No command, no paste. The hop carries a short code, so when the agent mentions
 ```
 hop ls                see the sessions on this machine
 hop pack              pack one — the file and a reference land on your clipboard
-hop pack --attach     the file on the clipboard too, for a chat window
 hop pack --last 5     only the last five messages
-hop pack --full       the whole conversation on the clipboard, for a browser tab
+hop pack --text       the whole conversation on the clipboard, for a browser tab
 hop to                open one in a command-line agent — it asks which
 hop source            which apps are linked
 ```
@@ -84,8 +83,8 @@ clipboard holds two things at once:
 | what lands | where |
 |---|---|
 | the file | a chat window that takes attachments |
-| a short reference to it | any agent that can read a path |
-| `--full`, the whole thing | a browser tab, which cannot read your disk |
+| a short reference carrying its path | any agent that can read a file |
+| `--text`, the conversation itself | a browser tab, or anywhere that reads neither |
 
 ## What it reads
 
@@ -108,7 +107,7 @@ Codex, terminal           1         6m ago     linked
 
 All of it from files the agents already write. Sessions that run in the cloud, or
 in a browser tab, leave nothing on your disk and cannot be read — for those,
-`hop pack --full` on something you can reach, and paste.
+`hop pack --text` on something you can reach, and paste.
 
 ## What a hop looks like
 

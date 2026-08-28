@@ -64,6 +64,25 @@ type Agent struct {
 	MCPAdd    []string `json:"mcp_add,omitempty"`
 	MCPRemove []string `json:"mcp_remove,omitempty"`
 
+	// MCPConfig is the file to write into when an agent has no command line at
+	// all. Some do not: an editor that ships as an application and nothing else
+	// cannot be told anything from a terminal, and the only way in is the JSON
+	// file it reads at startup.
+	//
+	// Going through an agent's own command line stays the first choice, because
+	// then the agent owns the format and grasshopper cannot get it wrong. Writing
+	// is the fallback, and it is deliberately narrow: grasshopper adds one key
+	// under MCPConfigKey and takes that same key back out, leaving every other
+	// line of the file alone. It never rewrites a file it did not understand.
+	//
+	// Reading it is not a fallback. An agent that can be asked whether it knows
+	// about a server usually answers slowly — one of them health-checks every
+	// server it has, which is eight seconds nobody wants from a diagnostic — and
+	// the file it wrote is the same answer, instantly. So this is set on agents
+	// that register through their own command line too, purely to be read.
+	MCPConfig    string `json:"mcp_config,omitempty"`
+	MCPConfigKey string `json:"mcp_config_key,omitempty"`
+
 	// Launch is where to find the command that starts this agent: a name to look
 	// up on PATH, a path to a file, or several of either separated by commas and
 	// tried in order.
@@ -85,12 +104,14 @@ func Default() Registry {
 		// One entry covers a terminal, a desktop app and an editor extension:
 		// they are the same program underneath and they all write here.
 		"claude-code": {
-			Name:        "Claude Code",
-			Transcripts: "~/.claude/projects/*/*.jsonl",
-			Normalize:   "jsonl-tree",
-			Launch:      "claude,~/.local/bin/claude,/opt/homebrew/bin/claude",
-			MCPAdd:      []string{"mcp", "add", "{name}", "--scope", "user", "--", "{command}", "mcp"},
-			MCPRemove:   []string{"mcp", "remove", "{name}", "--scope", "user"},
+			Name:         "Claude Code",
+			Transcripts:  "~/.claude/projects/*/*.jsonl",
+			Normalize:    "jsonl-tree",
+			Launch:       "claude,~/.local/bin/claude,/opt/homebrew/bin/claude",
+			MCPAdd:       []string{"mcp", "add", "{name}", "--scope", "user", "--", "{command}", "mcp"},
+			MCPRemove:    []string{"mcp", "remove", "{name}", "--scope", "user"},
+			MCPConfig:    "~/.claude.json",
+			MCPConfigKey: "mcpServers",
 			Surfaces: map[string]string{
 				"cli":            "terminal",
 				"claude-desktop": "desktop app",
@@ -99,13 +120,15 @@ func Default() Registry {
 			},
 		},
 		"codex": {
-			Name:        "Codex",
-			Transcripts: "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
-			Normalize:   "jsonl-events",
-			Index:       "~/.codex/session_index.jsonl",
-			Launch:      "codex,/Applications/ChatGPT.app/Contents/Resources/codex",
-			MCPAdd:      []string{"mcp", "add", "{name}", "--", "{command}", "mcp"},
-			MCPRemove:   []string{"mcp", "remove", "{name}"},
+			Name:         "Codex",
+			Transcripts:  "~/.codex/sessions/*/*/*/*.jsonl,~/.codex/archived_sessions/*.jsonl",
+			Normalize:    "jsonl-events",
+			Index:        "~/.codex/session_index.jsonl",
+			Launch:       "codex,/Applications/ChatGPT.app/Contents/Resources/codex",
+			MCPAdd:       []string{"mcp", "add", "{name}", "--", "{command}", "mcp"},
+			MCPRemove:    []string{"mcp", "remove", "{name}"},
+			MCPConfig:    "~/.codex/config.toml",
+			MCPConfigKey: "mcp_servers",
 			Surfaces: map[string]string{
 				"Codex Desktop": "ChatGPT app",
 				"Codex CLI":     "terminal",
@@ -131,7 +154,9 @@ func Default() Registry {
 			Normalize: "jsonl-patch",
 			Launch: "code,/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code," +
 				"~/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
-			MCPAdd: []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
+			MCPAdd:       []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
+			MCPConfig:    "~/Library/Application Support/Code/User/mcp.json",
+			MCPConfigKey: "servers",
 			// This format writes no entrypoint of its own, so the folder the file
 			// was found in is what names the editor.
 			Surfaces: map[string]string{
@@ -146,13 +171,15 @@ func Default() Registry {
 		// directory the session was working in. Everything it needs is in the
 		// chat history itself; the summary beside it is the agent's own notes.
 		"grok": {
-			Name:        "Grok",
-			Transcripts: "~/.grok/sessions/*/*/chat_history.jsonl",
-			Normalize:   "jsonl-grok",
-			Launch:      "grok,~/.local/bin/grok,~/.grok/bin/grok",
-			MCPAdd:      []string{"mcp", "add", "{name}", "{command}", "--", "mcp"},
-			MCPRemove:   []string{"mcp", "remove", "{name}"},
-			Surfaces:    map[string]string{".grok": "terminal"},
+			Name:         "Grok",
+			Transcripts:  "~/.grok/sessions/*/*/chat_history.jsonl",
+			Normalize:    "jsonl-grok",
+			Launch:       "grok,~/.local/bin/grok,~/.grok/bin/grok",
+			MCPAdd:       []string{"mcp", "add", "{name}", "{command}", "--", "mcp"},
+			MCPRemove:    []string{"mcp", "remove", "{name}"},
+			MCPConfig:    "~/.grok/config.toml",
+			MCPConfigKey: "mcp_servers",
+			Surfaces:     map[string]string{".grok": "terminal"},
 		},
 		// Antigravity writes its steps to a transcript beside the conversation
 		// database it keeps for itself. The database is protobuf; the transcript
@@ -162,6 +189,10 @@ func Default() Registry {
 			Transcripts: "~/.gemini/antigravity/brain/*/.system_generated/logs/transcript.jsonl",
 			Normalize:   "jsonl-steps",
 			Surfaces:    map[string]string{"antigravity": "editor"},
+			Launch:      "/Applications/Antigravity.app/Contents/MacOS/Antigravity,~/Applications/Antigravity.app/Contents/MacOS/Antigravity",
+			// No command line of any kind, so the config file is the only way in.
+			MCPConfig:    "~/.gemini/config/mcp_config.json",
+			MCPConfigKey: "mcpServers",
 		},
 		// Cursor keeps every conversation in one key-value table inside the
 		// editor's own state database, so this is a container: the path names the
@@ -176,17 +207,23 @@ func Default() Registry {
 			// The VS Code family registers an MCP server from a JSON blob on the
 			// command line, and offers no way to take one back out again. So this
 			// adds and hop uninstall says plainly that it cannot remove.
-			MCPAdd:   []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
-			Surfaces: map[string]string{"Cursor": "editor"},
+			MCPAdd:       []string{"--add-mcp", `{"name":"{name}","command":"{command}","args":["mcp"]}`},
+			MCPConfig:    "~/Library/Application Support/Cursor/User/settings.json",
+			MCPConfigKey: "mcp.servers",
+			Surfaces:     map[string]string{"Cursor": "editor"},
 		},
 		// OpenClaw keeps one database per agent id, with every session it has run
 		// inside it. Same shape as Cursor, different tables.
 		"openclaw": {
-			Name:        "OpenClaw",
-			Transcripts: "~/.openclaw/agents/*/agent/openclaw-agent.sqlite",
-			Normalize:   "sqlite-openclaw",
-			Launch:      "openclaw",
-			Surfaces:    map[string]string{".openclaw": "gateway"},
+			Name:         "OpenClaw",
+			Transcripts:  "~/.openclaw/agents/*/agent/openclaw-agent.sqlite",
+			Normalize:    "sqlite-openclaw",
+			Launch:       "openclaw,~/.openclaw/bin/openclaw",
+			MCPAdd:       []string{"mcp", "add", "{name}", "--command", "{command}", "--arg", "mcp", "--no-probe"},
+			MCPRemove:    []string{"mcp", "unset", "{name}"},
+			MCPConfig:    "~/.openclaw/openclaw.json",
+			MCPConfigKey: "mcp.servers",
+			Surfaces:     map[string]string{".openclaw": "gateway"},
 		},
 	}
 }
@@ -302,6 +339,14 @@ func (r Registry) Called(key string) string {
 }
 
 // MCPArgs fills in an agent's registration arguments.
+// ConfigPath is where an agent's MCP configuration lives, with ~ resolved.
+func ConfigPath(a Agent) string {
+	if a.MCPConfig == "" {
+		return ""
+	}
+	return expand(a.MCPConfig)
+}
+
 func MCPArgs(template []string, name, command string) []string {
 	args := make([]string, 0, len(template))
 	for _, arg := range template {

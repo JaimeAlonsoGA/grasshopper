@@ -102,8 +102,15 @@ func runUninstall(args []string) error {
 		return err
 	}
 
-	removed := 0
+	removed, stuck := 0, 0
 	for _, target := range mcpTargets() {
+		// Saying "unregistered" about an agent that offers no way to unregister
+		// would be the one lie a cleanup command must not tell.
+		if !target.removable() {
+			fmt.Printf("  %-26s remove it in the app: it takes a server but gives none back\n", target.name)
+			stuck++
+			continue
+		}
 		if err := target.unregister(); err != nil {
 			fmt.Printf("  %-26s could not unregister: %v\n", target.name, err)
 			continue
@@ -111,7 +118,7 @@ func runUninstall(args []string) error {
 		fmt.Printf("  %-26s unregistered\n", target.name)
 		removed++
 	}
-	if removed == 0 {
+	if removed == 0 && stuck == 0 {
 		fmt.Print("  nothing was registered\n")
 	}
 
@@ -134,6 +141,17 @@ func mcpTargets() []mcpTarget {
 	var targets []mcpTarget
 	for _, key := range reg.Keys() {
 		agent := reg[key]
+		// An agent with a config file and no command line is still reachable — it
+		// is just reached by writing rather than by asking. When it has both, the
+		// command line wins: the agent owns its own format.
+		if config := registry.ConfigPath(agent); len(agent.MCPAdd) == 0 && config != "" && agent.MCPConfigKey != "" {
+			targets = append(targets, mcpTarget{
+				name:      reg.Called(key),
+				config:    config,
+				configKey: agent.MCPConfigKey,
+			})
+			continue
+		}
 		if len(agent.MCPAdd) == 0 {
 			continue
 		}
@@ -156,11 +174,27 @@ type mcpTarget struct {
 	command string
 	add     []string
 	remove  []string
+
+	// config and configKey are set instead of command for an agent that has no
+	// command line to ask.
+	config    string
+	configKey string
+}
+
+// removable reports whether this agent can be told to forget as well as told to
+// remember. Some can only be told once — the VS Code family takes a server on
+// the command line and offers no way to take one back — and hop uninstall says
+// so rather than reporting a success it did not have.
+func (t mcpTarget) removable() bool {
+	return t.config != "" || len(t.remove) > 0
 }
 
 // register points an agent at grasshopper. The removal comes first, so running
 // hatch again is a repair rather than a second copy.
 func (t mcpTarget) register(binary string) error {
+	if t.config != "" {
+		return writeMCPConfig(t.config, t.configKey, serverName, binary)
+	}
 	if len(t.remove) > 0 {
 		_ = exec.Command(t.command, registry.MCPArgs(t.remove, serverName, binary)...).Run()
 	}
@@ -172,6 +206,9 @@ func (t mcpTarget) register(binary string) error {
 }
 
 func (t mcpTarget) unregister() error {
+	if t.config != "" {
+		return removeMCPConfig(t.config, t.configKey, serverName)
+	}
 	if len(t.remove) == 0 {
 		return nil
 	}

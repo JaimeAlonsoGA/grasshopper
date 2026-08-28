@@ -31,14 +31,13 @@ A hop is one packed conversation: a bounded text block whose header names the so
 
 - `hop hatch` — set it up; re-runnable, repairs rather than duplicates
 - `hop ls` — the sessions on this machine
-- `hop pack` — pack one; a short reference carrying its absolute path lands on the clipboard
+- `hop pack` — pack one; the file and a short reference to it land on the clipboard together
 - `hop pack --last 5` — only the last five messages, plus the objective the thread opened with
-- `hop pack --full` — the whole conversation on the clipboard, for a browser tab
-- `hop pack --attach` — the file on the clipboard as well, for a chat window that takes attachments
+- `hop pack --text` — the conversation itself on the clipboard, for a browser tab or anywhere that reads neither a file nor a path
 - `hop to` — open one in a command-line agent; it asks which
 - `hop show` — print a session as a bundle
 - `hop source` — which apps are linked
-- `hop doctor` — where grasshopper is looking, and what it found
+- `hop doctor` — where it is looking, what it found, and which agents have grasshopper registered
 - `hop uninstall` — unregister everywhere; hops stay in ~/.grasshopper
 
 ## What it reads
@@ -47,7 +46,7 @@ Claude Code (terminal, VS Code, desktop app, phone), Codex (ChatGPT desktop app,
 
 ## What it cannot read
 
-Browser tabs (ChatGPT, Claude.ai, Grok, Gemini web), phone chat apps, and sessions that run in the cloud. They leave nothing on disk. For those, use `hop pack --full` on something reachable and paste.
+Browser tabs (ChatGPT, Claude.ai, Grok, Gemini web), phone chat apps, and sessions that run in the cloud. They leave nothing on disk. For those, use `hop pack --text` on something reachable and paste.
 
 ## What it does not do
 
