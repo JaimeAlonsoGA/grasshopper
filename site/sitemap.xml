@@ -6,8 +6,13 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://hopcli.dev/index.md</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://hopcli.dev/llms.txt</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.8</priority>
   </url>
 </urlset>

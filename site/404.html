@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gone — grasshopper</title>
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#221d16">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/favicon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="/assets/favicon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&amp;family=Work+Sans:wght@400;500&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: oklch(0.19 0.014 85); color: oklch(0.93 0.02 90); font-family: 'Work Sans', -apple-system, Helvetica, sans-serif; }
+  a { color: oklch(0.82 0.12 82); text-underline-offset: 3px; }
+  a:hover { color: oklch(0.92 0.1 85); }
+  ::selection { background: oklch(0.68 0.12 82); color: oklch(0.17 0.014 85); }
+  :focus-visible { outline: 2px solid oklch(0.78 0.14 82); outline-offset: 3px; }
+  main { min-height: 100vh; max-width: 1080px; margin: 0 auto; padding: 26px clamp(16px, 3.2vw, 26px) 64px; display: flex; flex-direction: column; }
+  nav { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .wordmark { font-family: 'Fraunces', Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; color: oklch(0.94 0.03 88); text-decoration: none; }
+  .ghlink { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: oklch(0.7 0.03 85); text-decoration: none; }
+  .ghlink:hover { color: oklch(0.86 0.12 82); }
+  section { flex: 1; display: flex; align-items: center; margin-top: 20px; }
+  .card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: clamp(20px, 4vw, 40px); width: 100%; background: oklch(0.235 0.02 80); border-radius: 18px; padding: clamp(30px, 5vw, 54px) clamp(22px, 4vw, 46px) clamp(28px, 4vw, 46px); }
+  .code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.65 0.03 85); }
+  h1 { font-family: 'Fraunces', Georgia, serif; font-size: clamp(38px, 6.4vw, 62px); line-height: 0.98; letter-spacing: -0.035em; font-weight: 600; margin: 16px 0 0; color: oklch(0.96 0.03 88); text-wrap: balance; }
+  p { font-size: 18px; line-height: 1.45; color: oklch(0.85 0.03 85); margin: 20px 0 0; max-width: 42ch; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 32px; }
+  .btn { font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.03em; color: oklch(0.2 0.02 85); background: oklch(0.78 0.14 82); border-radius: 9px; padding: 13px 22px; text-decoration: none; }
+  .btn:hover { background: oklch(0.85 0.15 82); color: oklch(0.2 0.02 85); }
+  .chip { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: oklch(0.86 0.1 85); background: oklch(0.165 0.014 85); border: 1px solid oklch(0.32 0.02 82); border-radius: 9px; padding: 12px 16px; }
+  .card img { width: clamp(96px, 20vw, 210px); height: auto; image-rendering: pixelated; animation: hop404 3.4s ease-in-out infinite; filter: drop-shadow(0 10px 18px oklch(0.1 0.02 85 / 0.55)); }
+  footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 48px; padding-top: 22px; border-top: 1px solid oklch(0.3 0.02 82); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: oklch(0.6 0.025 85); }
+  footer .links { display: flex; flex-wrap: wrap; gap: 20px; }
+  footer a { text-decoration: none; }
+  @keyframes hop404 { 0%, 62% { transform: translateY(0) } 72% { transform: translateY(-16px) rotate(-4deg) } 84% { transform: translateY(0) } 92% { transform: translateY(-5px) } 100% { transform: translateY(0) } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important } }
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <a class="wordmark" href="/">grasshopper</a>
+    <a class="ghlink" href="https://github.com/JaimeAlonsoGA/grasshopper">github ↗</a>
+  </nav>
+
+  <section>
+    <div class="card">
+      <div>
+        <div class="code">404</div>
+        <h1>This one hopped off.</h1>
+        <p>Nothing lives at that path. The transcript it came from is probably still on your disk, though.</p>
+        <div class="actions">
+          <a class="btn" href="/">back to the meadow</a>
+          <code class="chip">hop ls</code>
+        </div>
+      </div>
+      <img src="/assets/hopper-pixel.png" width="320" height="320" alt="Hopper, the grasshopper mascot, mid-hop">
+    </div>
+  </section>
+
+  <footer>
+    <span>hopcli.dev</span>
+    <div class="links">
+      <a href="https://github.com/JaimeAlonsoGA/grasshopper">source</a>
+      <a href="/llms.txt">llms.txt</a>
+    </div>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="grasshopper">
-  <!-- A jump: the arc is the product, and it reads at 16px where an insect would not. -->
-  <rect width="32" height="32" rx="6" fill="#17615A"/>
-  <path d="M6 23 Q16 5 26 23" fill="none" stroke="#F9FAFA" stroke-width="2.6"
-        stroke-linecap="round" stroke-dasharray="0.1 5.2"/>
-  <circle cx="6" cy="23" r="2.6" fill="#F9FAFA"/>
-  <circle cx="26" cy="23" r="2.6" fill="#E0A85F"/>
-</svg>
